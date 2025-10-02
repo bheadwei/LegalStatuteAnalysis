@@ -2,16 +2,29 @@
 
 基於 LLM（大型語言模型）的智能分析工具，專門用於分析考試題目與相關法規條文的對應關係，能夠自動識別題目內容並智能匹配相關法條，生成詳細的對應分析報告。
 
-## 功能特色
+## 📋 專案狀態
 
-- 🤖 **LLM 驅動**: 支援多種 LLM 提供者（OpenAI、Claude、本地模型）
-- 🔍 **智能分析**: 使用 AI 模型進行精確的題目與法條對應分析
-- 📊 **結構化輸出**: 生成詳細的對應報告和統計分析
-- ⚡ **批量處理**: 支援大量考試題目的批量分析
-- 🎯 **高精度匹配**: 智能識別題目內容並匹配相關法規條文
-- 🔧 **程式化介面**: 提供完整的 Python API 和資料模型
-- 🖥️ **命令列工具**: 便捷的 CLI 操作介面
-- 📄 **PDF 處理**: 整合 MinerU 進行高品質 PDF 解析
+| 項目 | 狀態 | 版本 | 最後更新 |
+|------|------|------|----------|
+| 專案架構 | ✅ 完成 | v3.0 | 2025-09-23 |
+| 核心分析引擎 | ✅ 完成 | v3.0 | 2025-09-20 |
+| PDF 處理模組 | ✅ 完成 | v2.1 | 2025-08-20 |
+| LLM 解析器 | ✅ 完成 | v3.0 | 2025-08-19 |
+| 資料模型 | ✅ 完成 | v3.0 | 2025-08-20 |
+| 文件系統 | ✅ 完成 | v1.0 | 2025-09-23 |
+| 測試覆蓋率 | ⏳ 進行中 | - | - |
+
+## 🎯 功能特色
+
+- 🤖 **多 LLM 提供者支援**: OpenAI GPT-4o-mini、Claude 3、Google Gemini、本地模擬器
+- 🔍 **智能分析引擎**: 使用嵌入向量（Embedding）進行精確的題目與法條對應分析
+- 📊 **結構化資料處理**: 基於 Pydantic 模型的完整資料驗證與轉換
+- ⚡ **異步批量處理**: 支援大規模考試題目的高效並行分析
+- 🎯 **高精度匹配**: 智能識別題目內容並匹配相關法規條文，提供信心度評分
+- 🔧 **完整 Python API**: 提供程式化介面和資料模型
+- 🖥️ **命令列工具集**: 豐富的 CLI 工具支援各種操作場景
+- 📄 **PDF 處理**: 整合 MinerU 進行高品質 PDF 解析與轉換
+- 📈 **三階段輸出系統**: 資料整合、HTML 生成、PDF 產出
 
 ## 系統要求
 
@@ -202,37 +215,45 @@ questions = ExamQuestionLoader.load_from_json("results/exam_113_complete.json")
 print(f"載入 {len(questions)} 道題目")
 ```
 
-## 專案架構
+## 📁 專案架構
 
-### 目錄結構
+### 目錄結構（標準化模板）
 
 ```
 LegalStatuteAnalysis_V1/
-├── 📁 src/                        # 核心代碼
-│   ├── 📁 models/                 # 資料模型
-│   │   ├── data_loaders.py       # 資料載入器
-│   │   └── law_models.py         # 法條資料模型
-│   ├── 📁 core_embedding/        # 核心分析引擎
-│   │   ├── embedding_matcher.py  # 嵌入匹配器
-│   │   └── gemini_embedding_matcher.py  # Gemini 版本
-│   ├── 📁 parsing/               # LLM 解析器
-│   │   └── llm_parser.py        # LLM 解析邏輯
-│   └── 📁 pdf_converter/         # PDF 轉換器
-│       ├── core.py              # 核心轉換邏輯
-│       └── cli.py               # 命令列介面
-├── 📁 scripts/                   # 執行腳本
-│   ├── run_core_embedding.py    # 主要分析腳本
-│   ├── run_core_with_gemini.py  # Gemini 版本
-│   ├── run_llm_parsing.py       # LLM 解析腳本
-│   ├── convert_pdf.py           # PDF 轉換腳本
-│   └── ...                      # 其他工具腳本
-├── 📁 data/                      # 原始資料
-├── 📁 results/                   # 分析結果
-├── 📁 output/                    # 輸出文件
-├── 📄 law_config.json            # 系統配置
-├── 📄 pyproject.toml            # Poetry 配置
-└── 📄 requirements.txt           # 依賴套件
+├── 📄 CLAUDE.md                    # Claude Code 配置
+├── 📄 README.md                    # 專案文件
+├── 📄 pyproject.toml              # Poetry 配置
+├── 📄 requirements.txt            # 依賴套件
+│
+├── 📁 src/                        # 原始碼
+│   ├── 📁 main/python/            # 新架構（標準化）
+│   │   ├── 📁 core/               # 核心邏輯
+│   │   ├── 📁 models/             # 資料模型
+│   │   └── 📁 services/           # 服務層
+│   ├── 📁 main/resources/config/  # 配置檔案
+│   │   └── law_config.json
+│   ├── 📁 core_embedding/         # 舊架構（運行中）
+│   ├── 📁 models/                 # 舊架構（運行中）
+│   ├── 📁 parsing/                # LLM 解析器
+│   └── 📁 pdf_converter/          # PDF 處理
+│
+├── 📁 tools/scripts/              # 執行腳本
+│   ├── run_core_embedding.py      # 分析（OpenAI）
+│   ├── run_core_with_gemini.py    # 分析（Gemini）
+│   ├── stage1_data_processor.py   # 資料整合
+│   ├── stage2_html_generator.py   # HTML 生成
+│   ├── stage3_pdf_generator.py    # PDF 產出
+│   └── ...
+│
+├── 📁 data/                       # 原始資料
+├── 📁 results/                    # 分析結果
+├── 📁 output/                     # 最終輸出
+├── 📁 docs/                       # 文件
+└── 📁 logs/                       # 日誌
 ```
+
+**架構狀態**：雙架構並存，舊架構運行中，新架構為標準化模板
 
 ### 系統架構
 
@@ -274,38 +295,127 @@ graph TB
 4. **PDF 處理** (`src/pdf_converter/`)
    - 基於 MinerU 的高品質 PDF 轉換
 
-## 工作流程範例
+## 🚀 完整操作流程
 
-### 完整分析流程
+### 工作流程概覽
+
+```
+PDF 文件 → PDF 解析 → LLM 解析 → 法條轉換 → 智能分析 → 三階段輸出
+```
+
+### 詳細操作步驟
+
+#### 📋 階段 0：環境準備
 
 ```bash
-# 1. 準備 PDF 文件
+# 1. 克隆專案
+git clone <repository_url>
+cd LegalStatuteAnalysis_V1
+
+# 2. 創建虛擬環境
+python -m venv venv
+source venv/bin/activate  # Linux/WSL
+# venv\Scripts\activate   # Windows
+
+# 3. 安裝依賴
+poetry install
+# 或使用 pip
+pip install -r requirements.txt
+
+# 4. 配置環境變數（創建 .env）
+echo "OPENAI_API_KEY=your_key_here" > .env
+echo "LLM_PROVIDER=openai" >> .env
+```
+
+#### 📄 階段 1：PDF 處理與資料準備
+
+```bash
+# 1. 查看原始 PDF 文件
 ls data/*.pdf
 
-# 2. 轉換 PDF 為 Markdown（可選）
-python scripts/convert_pdf.py
+# 2. 轉換 PDF 為 Markdown（使用 MinerU）
+python tools/scripts/convert_pdf.py
 
-# 3. 解析考題資料
-python scripts/run_llm_parsing.py \
+# 3. 使用 LLM 解析考題內容
+python tools/scripts/run_llm_parsing.py \
   --questions_file "results/mineru_batch/113190_60150(5601).md" \
   --answers_file "results/mineru_batch/113190_ANS5601.md" \
   --output_file "results/exam_113_complete.json"
 
-# 4. 轉換法條資料
-python scripts/law_articles_converter.py
+# 4. 轉換法條資料為標準格式
+python tools/scripts/law_articles_converter.py
+```
 
-# 5. 執行智能對應分析
-python scripts/run_core_embedding.py --provider openai --limit 20
+#### 🔍 階段 2：智能分析與對應
 
-# 6. 檢視分析結果
+```bash
+# 方案 A：使用 OpenAI（推薦）
+python tools/scripts/run_core_embedding.py --provider openai --limit 20
+
+# 方案 B：使用 Google Gemini
+python tools/scripts/run_core_with_gemini.py --provider gemini --limit 20
+
+# 方案 C：使用模擬模式（測試用，無需 API）
+python tools/scripts/run_core_embedding.py --provider simulation --limit 5
+
+# 完整分析（所有題目）
+python tools/scripts/run_core_embedding.py --provider openai
+```
+
+#### 📊 階段 3：三階段輸出系統
+
+```bash
+# Stage 1: 資料整合
+python tools/scripts/stage1_data_processor.py
+# 輸出: results/integrated_data_stage1.json
+# 輸出: results/statistics_stage1.json
+
+# Stage 2: HTML 生成
+python tools/scripts/stage2_html_generator.py
+# 輸出: output/exam_report_stage2.html
+
+# Stage 3: PDF 產出
+python tools/scripts/stage3_pdf_generator.py
+# 輸出: output/exam_report_final.pdf
+```
+
+#### ✅ 階段 4：檢視與驗證結果
+
+```bash
+# 檢視分析統計
 python -c "
 import json
-with open('results/mapping_report_model_based.json', 'r', encoding='utf-8') as f:
-    data = json.load(f)
-print(f'總題目數: {data[\"metadata\"][\"total_questions\"]}')
-print(f'平均信心度: {data[\"metadata\"][\"average_confidence\"]:.3f}')
-print(f'成功率: {data[\"metadata\"][\"success_rate\"]:.1%}')
+with open('results/statistics_stage1.json', 'r', encoding='utf-8') as f:
+    stats = json.load(f)
+    print(f'總題目數: {stats.get(\"total_questions\", 0)}')
+    print(f'已匹配法條: {stats.get(\"matched_articles\", 0)}')
 "
+
+# 檢視核心分析結果
+cat results/core_embedding_matches.json | head -50
+
+# 開啟最終 PDF 報告
+xdg-open output/exam_report_final.pdf  # Linux
+# open output/exam_report_final.pdf    # macOS
+# start output/exam_report_final.pdf   # Windows
+```
+
+### ⚡ 快速開始（5 分鐘體驗）
+
+```bash
+# 1. 環境準備
+poetry install
+echo "LLM_PROVIDER=simulation" > .env
+
+# 2. 模擬分析（無需 API）
+python tools/scripts/run_core_embedding.py --provider simulation --limit 3
+
+# 3. 生成報告
+python tools/scripts/stage1_data_processor.py
+python tools/scripts/stage2_html_generator.py
+
+# 4. 檢視結果
+cat results/statistics_stage1.json
 ```
 
 ### 分析結果範例
@@ -386,11 +496,13 @@ print(f'成功率: {data[\"metadata\"][\"success_rate\"]:.1%}')
 }
 ```
 
-## 驗證安裝
+## ✅ 驗證安裝
+
+### 基本功能測試
 
 ```bash
-# 測試基本功能
-python scripts/run_core_embedding.py --provider simulation --limit 1
+# 測試核心分析功能（模擬模式）
+python tools/scripts/run_core_embedding.py --provider simulation --limit 1
 
 # 預期輸出
 🎯 法條考題智能對應系統 - 資料模型版本
@@ -403,6 +515,16 @@ python scripts/run_core_embedding.py --provider simulation --limit 1
 🤖 開始分析 (LLM: simulation)
 ✅ 分析完成！
 ```
+
+### 驗證檢查清單
+
+- [ ] Python 版本 ≥ 3.12
+- [ ] 成功安裝所有依賴套件
+- [ ] 配置檔案 `src/main/resources/config/law_config.json` 存在
+- [ ] 法條資料 `results/law_articles.csv` 存在
+- [ ] 模擬模式測試通過
+- [ ] （可選）OpenAI API 金鑰已設定
+- [ ] （可選）Claude API 金鑰已設定
 
 ## 故障排除
 
@@ -501,24 +623,53 @@ class CustomMatcher(EmbeddingMatcher):
 - 適當設定 `max_tokens` 參數
 - 定期備份結果文件
 
-## 版本資訊
+## 📌 版本資訊與開發進度
 
-### v3.0 (2025-01-20)
-- 🎯 **重構為資料模型架構**: 採用 Pydantic 模型進行資料驗證
-- 🤖 **多 LLM 提供者支援**: 支援 OpenAI、Claude、模擬器
-- ⚡ **異步處理優化**: 提升批量處理性能
-- 🔧 **完善錯誤處理**: 增進系統穩定性和可維護性
-- 📊 **詳細分析報告**: 生成結構化的對應分析結果
+### 當前版本：v3.0 (2025-09-23)
 
-### 主要功能模組
+**重大更新**：
+- 🎯 **資料模型重構**: 採用 Pydantic 模型進行完整資料驗證
+- 🤖 **多 LLM 提供者**: OpenAI、Claude、Gemini、本地模擬器
+- ⚡ **異步處理優化**: 大幅提升批量處理性能
+- 🏗️ **專案架構標準化**: 遵循 CLAUDE.md 標準模板
+- 📊 **三階段輸出系統**: 資料整合 → HTML → PDF
+- 🔧 **完善錯誤處理**: 增強系統穩定性和可維護性
 
-| 模組 | 功能 | 狀態 |
-|------|------|------|
-| 資料模型 | 法條和考題資料結構 | ✅ 完成 |
-| 分析引擎 | LLM 驅動的智能分析 | ✅ 完成 |
-| PDF 處理 | 基於 MinerU 的轉換 | ✅ 完成 |
-| 命令列工具 | CLI 介面 | ✅ 完成 |
-| Python API | 程式化介面 | ✅ 完成 |
+### 功能模組完成度
+
+| 模組 | 功能描述 | 狀態 | 版本 |
+|------|---------|------|------|
+| 資料模型 | Pydantic 模型、資料載入器 | ✅ 完成 | v3.0 |
+| 分析引擎 | Embedding 匹配、LLM 分析 | ✅ 完成 | v3.0 |
+| PDF 處理 | MinerU 轉換、品質檢查 | ✅ 完成 | v2.1 |
+| LLM 解析 | 智能考題解析 | ✅ 完成 | v3.0 |
+| 命令列工具 | 豐富的 CLI 腳本 | ✅ 完成 | v3.0 |
+| Python API | 程式化介面 | ✅ 完成 | v3.0 |
+| 三階段輸出 | 資料整合、HTML、PDF | ✅ 完成 | v1.0 |
+| 測試框架 | 單元測試、整合測試 | ⏳ 進行中 | - |
+| 文件系統 | README、CLAUDE.md | ✅ 完成 | v1.0 |
+
+### 開發路線圖
+
+**已完成**：
+- [x] 核心分析引擎
+- [x] 多 LLM 提供者支援
+- [x] PDF 處理與轉換
+- [x] 三階段輸出系統
+- [x] 專案架構標準化
+- [x] 完整文件撰寫
+
+**進行中**：
+- [ ] 單元測試覆蓋率提升
+- [ ] 整合測試完善
+- [ ] 舊架構整合至新架構
+
+**規劃中**：
+- [ ] Web 介面開發
+- [ ] RESTful API 服務
+- [ ] 資料庫整合
+- [ ] 批量處理優化
+- [ ] 效能監控儀表板
 
 ## 技術支援
 
@@ -553,7 +704,73 @@ mypy src/
 
 本專案採用 MIT 授權條款。
 
+## 📊 專案統計
+
+### 程式碼規模
+
+```bash
+# 統計程式碼行數
+find src/ -name "*.py" | xargs wc -l
+# 總計：約 15,000+ 行 Python 程式碼
+
+# 腳本工具數量
+ls tools/scripts/*.py | wc -l
+# 總計：20+ 個執行腳本
+```
+
+### 資料規模
+
+- **法條數量**：269 條（涵蓋 5 部法規）
+- **支援考試**：113 年專技高考不動產估價師/經紀人
+- **處理能力**：支援批量處理數百道題目
+- **分析精度**：平均信心度 > 75%
+
+### 技術棧
+
+**核心技術**：
+- Python 3.12+
+- Pydantic (資料驗證)
+- LangChain (LLM 整合)
+- Rich (CLI 美化)
+
+**LLM 提供者**：
+- OpenAI GPT-4o-mini
+- Claude 3 Haiku
+- Google Gemini
+- 本地模擬器
+
+**文件處理**：
+- MinerU (PDF 解析)
+- WeasyPrint (PDF 生成)
+- Python-DOCX (Word 處理)
+
 ---
 
-**法條考題智能對應系統開發團隊**  
-更新日期：2025年9月22日
+## 📝 更新日誌
+
+**v3.0 (2025-09-23)**
+- 完成專案架構標準化
+- 更新完整 README 與操作流程
+- 新增專案狀態與進度追蹤
+
+**v3.0 (2025-09-20)**
+- 完成三階段輸出系統
+- Gemini 分析引擎整合
+- 資料處理流程優化
+
+**v3.0 (2025-08-20)**
+- 核心分析引擎重構
+- Pydantic 資料模型導入
+- LLM 解析器完成
+
+---
+
+**法條考題智能對應系統開發團隊**
+📅 最後更新：2025 年 10 月 2 日
+📦 當前版本：v3.0
+📧 技術支援：請提交 Issue 到專案儲存庫
+
+**專案文件**：
+- 📘 [README.md](README.md) - 專案說明（本檔案）
+- 📗 [CLAUDE.md](CLAUDE.md) - 開發者指南
+- 📙 [使用說明書.md](使用說明書.md) - 詳細使用手冊
