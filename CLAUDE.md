@@ -1,14 +1,41 @@
-# CLAUDE.md - LegalStatuteAnalysis_V1
+# CLAUDE.md - LegalStatuteAnalysis
 
-> **文件版本**：1.0
-> **最後更新**：2025-09-23
-> **專案**：LegalStatuteAnalysis_V1
-> **描述**：查看目前專案的所有內容及架構，幫我結構化
-> **特色**：GitHub 自動備份、任務代理、預防技術債
+> **文件版本**：2.0 - 人類主導版
+> **最後更新**：2025-10-09
+> **專案**：LegalStatuteAnalysis
+> **描述**：自動化法律文件與法條對應系統，透過 Embedding 與 LLM 智能匹配，產出 HTML/PDF 報告
+> **協作模式**：人類駕駛，AI 協助
+> **特色**：GitHub 自動備份、人類主導 Subagent 協作、預防技術債
 
 此檔案為 Claude Code (claude.ai/code) 在此儲存庫中工作時提供必要的指引。
 
-## 👨‍💻 核心開發角色與心法 (Core Developer Persona & Philosophy)
+## 🎯 專案核心需求摘要
+
+### 核心問題
+解決法律文件與相關法條手動比對耗時且效率低落的問題。
+
+### 核心功能（5 階段）
+1. **PDF 解析考題** - 自動讀取並解析 PDF 格式的輸入文件
+2. **法條 Embedding** - 將法律條文轉換為向量，建立語義搜索資料庫
+3. **LLM 智能對應** - 利用 Embedding 和 LLM 進行智能匹配
+4. **HTML 報告生成** - 結構化匹配結果，生成清晰的 HTML 報告
+5. **PDF 報告下載** - 將 HTML 報告轉換為 PDF 檔案
+
+### 技術約束
+- **開發語言**：Python
+- **LLM Provider**：OpenAI API（需聯網）
+- **使用模式**：CLI 命令列工具
+- **用戶規模**：個人使用或小規模批次處理
+- **成本考量**：需監控 OpenAI API 調用成本
+
+### 成功標準
+- **對應準確率**：> 90%
+- **處理速度**：< 5 秒/題
+- **報告品質**：內容正確、格式清晰、無錯誤
+
+---
+
+## 👨‍💻 核心開發角色與心法 (Linus Torvalds Philosophy)
 
 ### 角色定義
 
@@ -75,7 +102,7 @@
 
    - 核心資料是什麼？它們的關係如何？
    - 資料流向哪裡？誰擁有它？誰修改它？
-   - 有沒有不不必要的資料複製或轉換？
+   - 有沒有不必要的資料複製或轉換？
    ```
 
    **第二層：特殊情況識別**
@@ -156,6 +183,62 @@
    "資料結構錯了，應該是..."
    ```
 
+---
+
+## 🤖 人類主導的 Subagent 協作系統
+
+### 🎯 核心協作原則
+
+**人類**：鋼彈駕駛員 - 決策者、指揮者、審查者
+**Claude**：智能副駕駛 - 分析者、建議者、執行者
+**Subagents**：專業支援單位 - 需人類確認才出動
+
+### 📋 智能建議系統
+
+#### 🗣️ 自然語言 Subagent 啟動
+
+| 自然語言描述 | 偵測關鍵字 | 啟動 Subagent | emoji |
+|------------|-----------|--------------|-------|
+| "檢查程式碼", "重構", "品質" | quality, refactor, code review | code-quality-specialist | 🟡 |
+| "安全", "漏洞", "檢查安全性" | security, vulnerability, audit | security-infrastructure-auditor | 🔴 |
+| "測試", "覆蓋率", "跑測試" | test, coverage, testing | test-automation-engineer | 🟢 |
+| "部署", "上線", "發布" | deploy, release, production | deployment-operations-engineer | ⚡ |
+| "文檔", "API文檔", "更新說明" | docs, documentation, api | documentation-specialist | 📝 |
+| "端到端", "UI測試", "使用者流程" | e2e, ui test, user flow | e2e-validation-specialist | 🧪 |
+
+#### 🎛️ 建議模式控制（當前設定：MEDIUM）
+
+```
+SUGGEST_HIGH   - 每次重要節點都建議
+SUGGEST_MEDIUM - 只在關鍵點建議（預設）✅
+SUGGEST_LOW    - 只在必要時建議
+SUGGEST_OFF    - 關閉自動建議
+
+設定: /suggest-mode [level]
+```
+
+### 🎮 協作指令
+
+#### 自然語言啟動（推薦）
+```
+人類：「幫我檢查程式碼品質」
+Claude：🟡 偵測意圖 → code-quality-specialist
+        ❓ 是否啟動此 Subagent？(y/N)
+
+人類：「我想做安全檢查」
+Claude：🔴 偵測意圖 → security-infrastructure-auditor
+        ❓ 啟動安全檢查？(y/N)
+```
+
+#### 快速指令
+```bash
+/suggest-mode [level]        # 設定建議頻率
+/review-code [path]          # 要求程式碼審視
+/check-quality               # 品質檢查建議
+```
+
+---
+
 ## 🚨 關鍵規則 - 請先閱讀
 
 > **⚠️ 規則遵循系統已啟動 ⚠️**
@@ -177,10 +260,15 @@
 - **絕不**複製貼上程式碼區塊 → 將其提取為共用的工具/函式
 - **絕不**寫死應為可配置的值 → 使用設定檔/環境變數
 - **絕不**使用像 enhanced_, improved_, new_, v2_ 這類的命名 → 應擴展原始檔案
+- **絕不**未經確認自動執行 Subagent → 人類主導原則
 
 ### 📝 強制性要求
 - **COMMIT (提交)** 每完成一個任務/階段後 - 無一例外。所有提交訊息都必須遵循下述的「提交訊息規範」。
 - **GITHUB BACKUP (備份)** - 每次提交後推送到 GitHub 以維持備份：`git push origin main`
+- **SUBAGENT COLLABORATION (Subagent 協作)** - 必須依據人類主導的協作決策樹決定何時啟動 Subagent：
+  - 🎨 **心流模式優先** - 創造期完全不干擾，專注實驗和原型
+  - 🔄 **整理期適度協作** - 用戶明確表示整理時才觸發品質 agent
+  - 🛡️ **品質期全面協作** - 準備交付時啟動完整的品質保證鏈
 - **USE TASK AGENTS (使用任務代理)** 處理所有長時間運行的操作 (>30秒) - Bash 指令在內容切換時會停止
 - **TODOWRITE** 用於複雜任務 (3個步驟以上) → 平行代理 → git 檢查點 → 測試驗證
 - **READ FILES FIRST (先讀取檔案)** 再編輯 - 若未先讀取檔案，Edit/Write 工具將會失敗
@@ -203,8 +291,8 @@
 - **chore**: 建置流程或輔助工具的變動 (例如修改 `.gitignore`)
 
 **範例:**
-- `feat(api): 新增使用者登入的 JWT 驗證`
-- `fix(db): 修正使用者模型中 email 欄位的驗證規則`
+- `feat(embedding): 新增法條向量化功能`
+- `fix(pdf): 修正 PDF 解析編碼問題`
 
 ### ⚡ 執行模式
 - **PARALLEL TASK AGENTS (平行任務代理)** - 同時啟動多個任務代理以達最高效率
@@ -218,13 +306,23 @@
 **步驟 1：規則確認**
 - [ ] ✅ 我確認 CLAUDE.md 中的所有關鍵規則並將遵循它們
 
-**步驟 2：任務分析**
+**步驟 2：人類主導的 Subagent 協作檢查 🤖**
+- [ ] **首先檢查**：用戶是否處於心流/實驗模式？ → 如果是，❌ 停用所有檢查，專注創造
+- [ ] **模式判斷**：
+  - [ ] 心流模式 ("快速原型"/"實驗"/"心流") → ❌ 跳過所有 Subagent 檢查
+  - [ ] 整理模式 ("重構"/"整理"/"優化") → ✅ 觸發 code-quality-specialist
+  - [ ] 品質模式 ("提交"/"部署"/"品質檢查") → ✅ 觸發品質 Subagent 鏈
+  - [ ] 明確指定 ("檢查程式碼"/"執行測試") → ✅ 直接執行對應 agent
+- [ ] **專案初始化例外**：專案初始化/規劃 → 由 Claude Code 直接處理
+- [ ] **自然檢查點**：功能完成且用戶滿意 → 💡 輕微建議品質檢查 (僅建議一次)
+
+**步驟 3：任務分析**
 - [ ] 這會不會在根目錄建立檔案？ → 如果是，改用適當的模組結構
 - [ ] 這會不會超過30秒？ → 如果是，使用任務代理而非 Bash
 - [ ] 這是不是有3個以上的步驟？ → 如果是，先使用 TodoWrite 進行拆解
 - [ ] 我是否將要使用 grep/find/cat？ → 如果是，改用適當的工具
 
-**步驟 3：預防技術債 (強制先搜尋)**
+**步驟 4：預防技術債 (強制先搜尋)**
 - [ ] **先搜尋**：使用 Grep pattern="<functionality>.*<keyword>" 尋找現有的實作
 - [ ] **檢查現有**：閱讀找到的任何檔案以了解目前的功能
 - [ ] 是否已存在類似的功能？ → 如果是，擴展現有的程式碼
@@ -234,79 +332,143 @@
 - [ ] 我是否可以擴展現有的程式碼而非建立新的？ → 優先選擇擴展而非建立
 - [ ] 我是否將要複製貼上程式碼？ → 改為提取至共用工具
 
-**步驟 4：會話管理**
+**步驟 5：會話管理**
 - [ ] 這是不是一個長期/複雜的任務？ → 如果是，規劃內容檢查點
 - [ ] 我是否已工作超過1小時？ → 如果是，考慮 /compact 或會話休息
 
 > **⚠️ 在所有核取方塊被明確驗證之前，請勿繼續**
+> **🤖 特別注意：Subagent 協作檢查是強制性的，不可跳過**
 
-## 🏗️ 專案總覽
+---
 
-LegalStatuteAnalysis_V1 是一個基於 LLM（大型語言模型）的智能分析工具，專門用於分析考試題目與相關法規條文的對應關係。
-
-### 🎯 **開發狀態**
-- **設定**: ✅ 完成
-- **核心功能**: ✅ 完成
-- **測試**: ✅ 配置完成
-- **文件**: ✅ 完成
-
-## 📁 標準化專案結構
+## 📁 專案結構
 
 ```
-LegalStatuteAnalysis_V1/
-├── 📄 CLAUDE.md                     # Claude Code 配置檔案
-├── 📄 README.md                     # 專案文件
-├── 📄 pyproject.toml               # Poetry 配置
-├── 📄 requirements.txt             # 依賴套件
-├── 📁 src/                         # 原始碼 (絕不在根目錄放檔案)
-│   ├── 📁 main/                    # 主要應用程式碼
+LegalStatuteAnalysis/
+├── 📄 CLAUDE.md                    # Claude Code 配置（人類主導版）
+├── 📄 README.md                    # 專案文件
+├── 📄 .gitignore                   # Git 忽略模式
+├── 📄 .gitmessage                  # 提交訊息模板
+├── 📄 requirements.txt             # Python 依賴套件
+│
+├── 📁 src/                         # 原始碼（絕不在根目錄放檔案）
+│   ├── 📁 main/
 │   │   ├── 📁 python/              # Python 程式碼
-│   │   │   ├── 📁 core/            # 核心業務邏輯 (原 core_embedding)
-│   │   │   ├── 📁 models/          # 資料模型 (原 models)
+│   │   │   ├── 📁 core/            # 核心邏輯
+│   │   │   │   ├── embedding.py   # Embedding 系統
+│   │   │   │   ├── matcher.py     # 智能對應引擎
+│   │   │   │   └── __init__.py
+│   │   │   ├── 📁 models/          # 資料模型
+│   │   │   │   ├── question.py    # 考題模型
+│   │   │   │   ├── article.py     # 法條模型
+│   │   │   │   ├── result.py      # 對應結果模型
+│   │   │   │   └── __init__.py
 │   │   │   ├── 📁 services/        # 服務層
-│   │   │   ├── 📁 api/             # API 端點/介面
-│   │   │   └── 📁 utils/           # 工具函式
+│   │   │   │   ├── pdf_parser.py  # PDF 解析服務
+│   │   │   │   ├── report_gen.py  # 報告生成服務
+│   │   │   │   └── __init__.py
+│   │   │   ├── 📁 utils/           # 工具函式
+│   │   │   │   ├── cost_monitor.py # API 成本監控
+│   │   │   │   ├── logger.py      # 日誌工具
+│   │   │   │   └── __init__.py
+│   │   │   └── 📁 api/             # API 封裝
+│   │   │       ├── openai_client.py # OpenAI API 封裝
+│   │   │       └── __init__.py
 │   │   └── 📁 resources/           # 非程式碼資源
-│   │       ├── 📁 config/          # 設定檔 (law_config.json, .env)
-│   │       └── 📁 assets/          # 靜態資產
+│   │       └── 📁 config/          # 配置檔案
+│   │           ├── config.json     # 系統配置
+│   │           └── .env.example    # 環境變數範例
 │   └── 📁 test/                    # 測試碼
 │       ├── 📁 unit/                # 單元測試
 │       └── 📁 integration/         # 整合測試
-├── 📁 tools/                       # 開發工具與腳本
-│   └── 📁 scripts/                 # 執行腳本 (原 scripts)
+│
+├── 📁 tools/                       # 開發工具
+│   └── 📁 scripts/                 # 執行腳本
+│       ├── run_analysis.py         # 主執行腳本
+│       ├── parse_pdf.py            # PDF 解析腳本
+│       └── generate_report.py      # 報告生成腳本
+│
 ├── 📁 data/                        # 原始資料
-├── 📁 results/                     # 分析結果
-├── 📁 output/                      # 產生的輸出檔案
+│   ├── 📁 pdfs/                    # PDF 考題檔案
+│   └── 📁 laws/                    # 法條資料
+│
+├── 📁 output/                      # 輸出檔案
+│   ├── 📁 html/                    # HTML 報告
+│   └── 📁 pdf/                     # PDF 報告
+│
 ├── 📁 docs/                        # 文件
 │   ├── 📁 api/                     # API 文件
-│   ├── 📁 user/                    # 使用者指南
-│   └── 📁 dev/                     # 開發者文件
-├── 📁 examples/                    # 使用範例
-├── 📁 build/                       # 建置產出物
-├── 📁 dist/                        # 發行包
-├── 📁 logs/                        # 日誌檔案
-└── 📁 tmp/                         # 暫存檔案
+│   └── 📁 user/                    # 使用者指南
+│
+└── 📁 examples/                    # 使用範例
 ```
 
-## 🚀 常用指令
+---
+
+## 🚀 快速開始
+
+### 安裝依賴
+```bash
+pip install -r requirements.txt
+```
+
+### 設定環境變數
+```bash
+cp src/main/resources/config/.env.example .env
+# 編輯 .env 填入 OPENAI_API_KEY
+```
+
+### 執行分析
+```bash
+python tools/scripts/run_analysis.py --input data/pdfs/exam.pdf --output output/
+```
+
+---
+
+## 🐙 GITHUB 設定與自動備份
+
+### 📋 **GITHUB 備份工作流程** (強制性)
+> **⚠️ CLAUDE CODE 必須遵循此模式：**
 
 ```bash
-# 使用 Poetry 安裝依賴
-poetry install
+# 每次提交後，總是執行：
+git push origin main
 
-# 執行核心分析 (新路徑)
-python tools/scripts/run_core_embedding.py --provider simulation --limit 5
-
-# 執行測試
-pytest src/test/
-
-# 程式碼格式化
-black src/ tools/
-isort src/ tools/
-
-# 型別檢查
-mypy src/
+# 這能確保：
+# ✅ 所有變更的遠端備份
+# ✅ 協作準備就緒
+# ✅ 版本歷史保存
+# ✅ 災難恢復保護
 ```
+
+---
+
+## 🎯 開發階段規劃
+
+### Phase 1 - 基礎建設 (1-2天)
+- [ ] 專案結構建立
+- [ ] 資料模型定義
+- [ ] API 封裝與測試
+- [ ] 成本監控系統
+
+### Phase 2 - 核心功能 (3-5天)
+- [ ] PDF 解析實作
+- [ ] Embedding 系統
+- [ ] LLM 智能對應引擎
+- [ ] 準確率測試
+
+### Phase 3 - 報告生成 (2-3天)
+- [ ] HTML 報告生成
+- [ ] PDF 轉換
+- [ ] 格式優化
+
+### Phase 4 - 優化與測試 (2-3天)
+- [ ] 準確率調優 (目標 >90%)
+- [ ] 速度優化 (目標 <5秒/題)
+- [ ] 成本監控與優化
+- [ ] 品質檢查
+
+---
 
 ## 🚨 預防技術債
 
@@ -326,17 +488,9 @@ Read(file_path="existing_feature.py")
 Edit(file_path="existing_feature.py", old_string="...", new_string="...")
 ```
 
-## 🧹 預防技術債工作流程
-
-### 在建立任何新檔案之前：
-1. **🔍 先搜尋** - 使用 Grep/Glob 尋找現有的實作
-2. **📋 分析現有** - 閱讀並理解目前的模式
-3. **🤔 決策樹**：可以擴展現有的嗎？ → 做就對了 | 必須建立新的嗎？ → 記錄原因
-4. **✅ 遵循模式** - 使用已建立的專案模式
-5. **📈 驗證** - 確保沒有重複或技術債
-
 ---
 
 **⚠️ 預防勝於整合 - 從一開始就建立乾淨的架構。**
 **🎯 專注於單一事實來源並擴展現有功能。**
 **📈 每個任務都應維持乾淨的架構並預防技術債。**
+**🤖 核心精神：人類是鋼彈駕駛員，Claude 是搭載 Linus 心法的智能副駕駛系統**

@@ -59,3 +59,18 @@ poetry.lock
 .env.test.local
 .env.production.local
 VibeCoding_Workflow_Templates/
+
+# MCP 配置檔案（包含敏感 API 金鑰）
+.mcp.json
+
+# Git
+.gitmessage
+
+# Logs
+logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
