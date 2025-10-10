@@ -59,6 +59,8 @@ poetry.lock
 .env.test.local
 .env.production.local
 VibeCoding_Workflow_Templates/
+VibeCoding_templates_with_agents/
+.claude/
 
 # MCP 配置檔案（包含敏感 API 金鑰）
 .mcp.json

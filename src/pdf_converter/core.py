@@ -60,18 +60,30 @@ class PDFToMarkdownConverter:
             self.logger.error("MinerU 命令未找到")
             raise RuntimeError("請先安裝 MinerU: pip install -U 'mineru[core]'")
     
-    def _run_mineru(self, pdf_path: Path, output_dir: Path) -> Path:
-        """運行 MinerU 進行 PDF 轉換"""
+    def _run_mineru(self, pdf_path: Path, output_dir: Path, use_gpu: bool = True) -> Path:
+        """運行 MinerU 進行 PDF 轉換
+
+        Args:
+            pdf_path: PDF 檔案路徑
+            output_dir: 輸出目錄
+            use_gpu: 是否使用 GPU 加速（預設為 True）
+        """
         self.logger.info(f"使用 MinerU 處理 PDF: {pdf_path}")
-        
+        if use_gpu:
+            self.logger.info("GPU 加速已啟用 (CUDA)")
+
         try:
             # 確保輸出目錄存在
             output_dir.mkdir(parents=True, exist_ok=True)
-            
+
             # 構建 MinerU 命令 - 使用絕對路徑
             abs_pdf_path = pdf_path.resolve()
             abs_output_dir = output_dir.resolve()
             cmd = ['mineru', '-p', str(abs_pdf_path), '-o', str(abs_output_dir)]
+
+            # 添加 GPU 設定
+            if use_gpu:
+                cmd.extend(['-d', 'cuda'])
             
             # 運行 MinerU
             result = subprocess.run(
