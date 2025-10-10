@@ -342,6 +342,34 @@ body {
     background: #e74c3c;
 }
 
+/* PDF 下載按鈕 */
+.pdf-button {
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 25px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    font-size: 0.95em;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.pdf-button:hover {
+    background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
+}
+
+.pdf-button::before {
+    content: "📄";
+    font-size: 1.2em;
+}
+
 /* 響應式設計 */
 @media (max-width: 768px) {
     body {
@@ -475,6 +503,11 @@ body {
         metadata = data.get('metadata', {})
         question_matches = data.get('question_matches', [])
 
+        # 檢查對應的 PDF 是否存在
+        pdf_dir = self.output_dir.parent / "pdf_reports"
+        pdf_file = pdf_dir / f"{json_file.stem}.pdf"
+        has_pdf = pdf_file.exists()
+
         # 生成 HTML
         html = f"""
 <!DOCTYPE html>
@@ -495,6 +528,7 @@ body {
         <div class="navigation">
             <ul class="nav-list">
                 <li><a href="index.html" class="nav-item">← 返回索引</a></li>
+                {"<li><a href='../pdf_reports/" + json_file.stem + ".pdf' download class='pdf-button'>下載 PDF 檔案</a></li>" if has_pdf else "<li><button onclick='window.print()' class='pdf-button'>列印為 PDF</button></li>"}
             </ul>
         </div>
 
