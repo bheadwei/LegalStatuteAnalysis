@@ -372,11 +372,27 @@ body {
 }
 """
 
+    def load_original_qa_data(self, json_file: Path) -> Dict[str, Any]:
+        """載入原始 qa_mapped JSON 資料以獲取選項內容"""
+        # 從 embedded 檔名還原成原始 qa_mapped 檔名
+        original_name = json_file.name.replace('_embedded.json', '.json')
+        qa_mapped_dir = json_file.parent.parent / "qa_mapped"
+        original_file = qa_mapped_dir / original_name
+
+        if original_file.exists():
+            with open(original_file, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        return {}
+
     def generate_html_for_json(self, json_file: Path) -> str:
         """為單個 JSON 檔案生成考題對應法條 HTML"""
-        # 讀取 JSON 資料
+        # 讀取 embedded JSON 資料
         with open(json_file, 'r', encoding='utf-8') as f:
             data = json.load(f)
+
+        # 讀取原始 qa_mapped JSON 以獲取選項內容
+        original_qa_data = self.load_original_qa_data(json_file)
+        original_questions = {q['question_number']: q for q in original_qa_data.get('questions', [])}
 
         metadata = data.get('metadata', {})
         question_matches = data.get('question_matches', [])
@@ -413,8 +429,17 @@ body {
         for question in question_matches:
             question_number = question.get('question_number', 'N/A')
             question_text = question.get('question_text', '')
-            correct_answer = question.get('correct_answer', 'N/A')
-            options = question.get('options', [])
+            correct_answer = question.get('correct_answer')
+
+            # 從原始 QA 資料獲取選項內容
+            original_q = original_questions.get(question_number, {})
+            original_options = original_q.get('options', {})
+
+            # 處理答案徽章
+            if correct_answer:
+                answer_badge = f'<div class="answer-badge">正確答案：{correct_answer}</div>'
+            else:
+                answer_badge = '<div class="answer-badge" style="background: #95a5a6;">答案未提供</div>'
 
             # 收集此題所有相關法條
             articles = self.collect_question_articles(question)
@@ -423,7 +448,7 @@ body {
         <div class="qa-card">
             <div class="qa-header">
                 <div class="qa-number">第 {question_number} 題</div>
-                <div class="answer-badge">正確答案：{correct_answer}</div>
+                {answer_badge}
             </div>
 
             <div class="qa-content">
@@ -432,11 +457,13 @@ body {
                 <div class="options-list">
 """
 
-            # 顯示選項
-            for option in options:
-                option_letter = option.get('option_letter', '')
-                option_text = option.get('option_text', '')
-                is_correct = option.get('is_correct_answer', False)
+            # 顯示選項（從原始 QA 資料讀取）
+            for option_letter in ['A', 'B', 'C', 'D']:
+                option_text = original_options.get(option_letter, '')
+                if not option_text:
+                    continue
+
+                is_correct = (option_letter == correct_answer)
                 correct_class = 'correct' if is_correct else ''
 
                 html += f"""
@@ -495,6 +522,189 @@ body {
 """
         return html
 
+    def generate_index_page(self, json_files: List[Path]) -> str:
+        """生成索引頁面"""
+        # 收集所有檔案的資訊
+        files_info = []
+
+        for json_file in json_files:
+            with open(json_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+
+            metadata = data.get('metadata', {})
+            question_matches = data.get('question_matches', [])
+
+            # 載入原始 QA 資料
+            original_qa_data = self.load_original_qa_data(json_file)
+            original_questions = original_qa_data.get('questions', [])
+
+            # 統計有答案的題數
+            answered_count = sum(1 for q in original_questions if q.get('answer') is not None)
+
+            file_info = self.parse_filename(json_file.name)
+            html_filename = f"{json_file.stem}_qa_mapping.html"
+
+            files_info.append({
+                'file_info': file_info,
+                'html_filename': html_filename,
+                'total_questions': len(question_matches),
+                'answered_questions': answered_count
+            })
+
+        # 生成 HTML
+        html = f"""
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>考題對應法條 - 索引頁面</title>
+    <link rel="stylesheet" href="styles/qa_article_mapping.css">
+    <style>
+        .exam-grid {{
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }}
+        .exam-card {{
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-left: 5px solid #3498db;
+            border-radius: 12px;
+            padding: 25px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }}
+        .exam-card:hover {{
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+            border-left-color: #e74c3c;
+        }}
+        .exam-title {{
+            font-size: 1.3em;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }}
+        .exam-stats {{
+            display: flex;
+            gap: 15px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }}
+        .stat-badge {{
+            background: #f8f9fa;
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 0.9em;
+            color: #555;
+            border: 1px solid #ddd;
+        }}
+        .metadata-card {{
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }}
+        .metadata-grid {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }}
+        .metadata-item {{
+            display: flex;
+            justify-content: space-between;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }}
+        .metadata-label {{
+            font-weight: 600;
+            color: #555;
+        }}
+        .metadata-value {{
+            color: #2c3e50;
+            font-weight: 500;
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="page-header">
+            <h1>📚 考題對應法條報告</h1>
+            <div class="subtitle">不動產經紀人考試 - 智能法條匹配系統</div>
+        </div>
+
+        <div class="metadata-card">
+            <h2 style="color: #2c3e50; margin-bottom: 15px;">📊 總體統計</h2>
+            <div class="metadata-grid">
+                <div class="metadata-item">
+                    <span class="metadata-label">總科目數</span>
+                    <span class="metadata-value">{len(files_info)} 科</span>
+                </div>
+                <div class="metadata-item">
+                    <span class="metadata-label">總題目數</span>
+                    <span class="metadata-value">{sum(f['total_questions'] for f in files_info)} 題</span>
+                </div>
+                <div class="metadata-item">
+                    <span class="metadata-label">有答案題數</span>
+                    <span class="metadata-value">{sum(f['answered_questions'] for f in files_info)} 題</span>
+                </div>
+                <div class="metadata-item">
+                    <span class="metadata-label">匹配方法</span>
+                    <span class="metadata-value">Embedding 智能匹配</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="metadata-card">
+            <h2 style="color: #2c3e50; margin-bottom: 20px;">📋 考試科目列表</h2>
+            <div class="exam-grid">
+"""
+
+        for file_info in files_info:
+            info = file_info['file_info']
+            html += f"""
+                <div class="exam-card" onclick="window.location.href='{file_info['html_filename']}'">
+                    <div class="exam-title">{info['display']}</div>
+                    <div style="color: #666; font-size: 0.95em; margin-bottom: 10px;">
+                        {info['subject']}
+                    </div>
+                    <div class="exam-stats">
+                        <div class="stat-badge">📝 {file_info['total_questions']} 題</div>
+                        <div class="stat-badge">✅ {file_info['answered_questions']} 題有答案</div>
+                        <div class="stat-badge">🤖 AI 智能匹配</div>
+                    </div>
+                </div>
+"""
+
+        html += f"""
+            </div>
+        </div>
+
+        <div class="metadata-card">
+            <h3 style="color: #2c3e50;">ℹ️ 使用說明</h3>
+            <ul style="line-height: 2; color: #555; margin-top: 10px; padding-left: 20px;">
+                <li><strong>智能法條匹配</strong>：使用 OpenAI Embedding 技術自動匹配相關法條</li>
+                <li><strong>相似度評分</strong>：每個法條都有相似度百分比，幫助判斷相關性</li>
+                <li><strong>完整法條內容</strong>：顯示法條名稱、條號、類別、主管機關及完整內容</li>
+                <li><strong>答案標示</strong>：正確答案以綠色標示，無答案題目會特別標註</li>
+            </ul>
+        </div>
+
+        <div style="text-align: center; color: #999; margin-top: 30px; padding: 20px;">
+            生成時間：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+        </div>
+    </div>
+</body>
+</html>
+"""
+        return html
+
     def process_all_files(self):
         """處理所有 JSON 檔案"""
         # 找到所有 JSON 檔案
@@ -524,12 +734,22 @@ body {
             generated_files.append(html_file)
             logger.info(f"✅ HTML 已生成：{html_file}")
 
+        # 生成 index 頁面
+        index_file = self.output_dir / "index.html"
+        index_content = self.generate_index_page(json_files)
+
+        with open(index_file, 'w', encoding='utf-8') as f:
+            f.write(index_content)
+
+        logger.info(f"✅ 索引頁面已生成：{index_file}")
+
         # 生成摘要
         logger.info("=" * 60)
         logger.info("考題對應法條 HTML 轉換完成摘要")
         logger.info("=" * 60)
         logger.info(f"處理檔案數：{len(json_files)}")
         logger.info(f"輸出目錄：{self.output_dir}")
+        logger.info(f"索引頁面：{index_file}")
         logger.info("=" * 60)
 
         return generated_files
