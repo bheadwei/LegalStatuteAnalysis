@@ -1,0 +1,13 @@
+mineru[core]>=2.1.0
+rich==13.7.0
+click==8.1.7
+langchain
+langchain-openai
+python-dotenv
+openai>=1.0.0
+numpy
+pandas
+scikit-learn
+pydantic
+weasyprint
+markdown
