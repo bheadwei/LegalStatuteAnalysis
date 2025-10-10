@@ -36,6 +36,67 @@ class EmbeddedResultsHTMLGenerator:
         logger.info(f"輸入目錄: {self.input_dir}")
         logger.info(f"輸出目錄: {self.output_dir}")
 
+    def parse_filename(self, filename: str) -> Dict[str, str]:
+        """
+        解析檔名，提取年份和科目資訊
+
+        格式：112190_1201_民法概要_mapped_embedded.json
+        """
+        import re
+
+        # 移除副檔名和後綴
+        name = filename.replace('_mapped_embedded.json', '').replace('_mapped_embedded', '')
+        name = name.replace('.json', '')
+
+        # 提取年份（前3位數字）和科目
+        match = re.match(r'(\d{3})(\d+)_(\d+)_(.+)', name)
+        if match:
+            year = match.group(1)  # 例如：112
+            exam_code = match.group(2) + match.group(3)  # 例如：1901201
+            subject = match.group(4)  # 例如：民法概要
+
+            return {
+                'year': f'{year}年',
+                'exam_code': exam_code,
+                'subject': subject,
+                'display': f'{year}年 - {subject}'
+            }
+
+        return {
+            'year': '未知',
+            'exam_code': '',
+            'subject': name,
+            'display': name
+        }
+
+    def collect_law_statistics(self, question_matches: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """收集題目中所有匹配法條的統計資訊"""
+        law_counts = {}  # 法條ID -> 出現次數
+        law_details = {}  # 法條ID -> 法條詳細資訊
+
+        for question in question_matches:
+            for option in question.get('options', []):
+                for article in option.get('matched_articles', [])[:3]:  # 只統計前3個最相關
+                    law_id = article.get('id')
+                    if law_id:
+                        law_counts[law_id] = law_counts.get(law_id, 0) + 1
+                        if law_id not in law_details:
+                            law_details[law_id] = {
+                                'law_name': article.get('law_name'),
+                                'article_no': article.get('article_no_main'),
+                                'category': article.get('category')
+                            }
+
+        # 排序：按出現次數排序
+        sorted_laws = sorted(law_counts.items(), key=lambda x: x[1], reverse=True)
+
+        return {
+            'total_laws': len(law_counts),
+            'top_laws': [(law_id, count, law_details.get(law_id, {})) for law_id, count in sorted_laws[:10]],
+            'law_counts': law_counts,
+            'law_details': law_details
+        }
+
     def generate_css(self) -> str:
         """生成CSS樣式"""
         return """
@@ -421,12 +482,210 @@ body {
     .page-header {
         background: #2c3e50;
     }
+
+    /* 修復滾動條問題：列印時顯示完整內容 */
+    .article-content {
+        max-height: none !important;
+        overflow: visible !important;
+    }
+}
+
+/* 標籤頁樣式 */
+.tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.tab-button {
+    background: none;
+    border: none;
+    padding: 12px 24px;
+    font-size: 1.1em;
+    font-weight: 600;
+    color: #666;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-bottom: 3px solid transparent;
+}
+
+.tab-button:hover {
+    color: #3498db;
+}
+
+.tab-button.active {
+    color: #3498db;
+    border-bottom-color: #3498db;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* 年份卡片 */
+.year-section {
+    margin-bottom: 25px;
+}
+
+.year-header {
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+    color: white;
+    padding: 15px 20px;
+    border-radius: 10px 10px 0 0;
+    font-size: 1.3em;
+    font-weight: 700;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.year-stats {
+    font-size: 0.8em;
+    opacity: 0.9;
+}
+
+.year-content {
+    background: white;
+    border: 2px solid #3498db;
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+    padding: 20px;
+}
+
+.subject-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 15px;
+}
+
+/* 法條卡片 */
+.law-item {
+    background: white;
+    border: 2px solid #e0e0e0;
+    border-left: 4px solid #e74c3c;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 15px;
+    transition: all 0.3s ease;
+}
+
+.law-item:hover {
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    transform: translateX(5px);
+}
+
+.law-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.law-title {
+    font-size: 1.2em;
+    font-weight: 700;
+    color: #2c3e50;
+}
+
+.law-count-badge {
+    background: #e74c3c;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 1em;
+}
+
+.related-exams {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.related-exams-title {
+    font-weight: 600;
+    color: #666;
+    margin-bottom: 10px;
+    font-size: 0.95em;
+}
+
+.exam-tag {
+    display: inline-block;
+    background: #f8f9fa;
+    border: 1px solid #ddd;
+    padding: 6px 12px;
+    border-radius: 15px;
+    margin: 5px 5px 5px 0;
+    font-size: 0.9em;
+    color: #555;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.exam-tag:hover {
+    background: #3498db;
+    color: white;
+    border-color: #3498db;
 }
 """
 
     def generate_index_page(self, json_files: List[Path]) -> str:
-        """生成索引頁面"""
-        html = """
+        """生成索引頁面（按年份和法條分類）"""
+        # 收集所有文件的資訊
+        years_data = {}  # year -> [{file_info, metadata, law_stats}, ...]
+        all_laws = {}  # law_id -> {details, count, exam_files}
+
+        for json_file in json_files:
+            # 讀取 JSON 資料
+            with open(json_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+
+            metadata = data.get('metadata', {})
+            question_matches = data.get('question_matches', [])
+
+            # 解析檔名
+            file_info = self.parse_filename(json_file.name)
+            year = file_info['year']
+
+            # 收集法條統計
+            law_stats = self.collect_law_statistics(question_matches)
+
+            # 按年份分類
+            if year not in years_data:
+                years_data[year] = []
+
+            years_data[year].append({
+                'file': json_file,
+                'file_info': file_info,
+                'metadata': metadata,
+                'law_stats': law_stats
+            })
+
+            # 收集所有法條
+            for law_id, count, details in law_stats['top_laws']:
+                if law_id not in all_laws:
+                    all_laws[law_id] = {
+                        'details': details,
+                        'total_count': 0,
+                        'exam_files': []
+                    }
+                all_laws[law_id]['total_count'] += count
+                all_laws[law_id]['exam_files'].append({
+                    'file': json_file,
+                    'file_info': file_info,
+                    'count': count
+                })
+
+        # 排序法條（按總出現次數）
+        sorted_all_laws = sorted(all_laws.items(), key=lambda x: x[1]['total_count'], reverse=True)[:20]
+
+        # 生成 HTML
+        html = f"""
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -434,6 +693,21 @@ body {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Embedding 結果報告 - 索引</title>
     <link rel="stylesheet" href="styles/main.css">
+    <script>
+        function switchTab(tabName) {{
+            // 隱藏所有標籤內容
+            const contents = document.querySelectorAll('.tab-content');
+            contents.forEach(c => c.classList.remove('active'));
+
+            // 移除所有按鈕的 active 狀態
+            const buttons = document.querySelectorAll('.tab-button');
+            buttons.forEach(b => b.classList.remove('active'));
+
+            // 顯示選中的標籤
+            document.getElementById(tabName + '-content').classList.add('active');
+            document.getElementById(tabName + '-btn').classList.add('active');
+        }}
+    </script>
 </head>
 <body>
     <div class="container">
@@ -443,33 +717,101 @@ body {
         </div>
 
         <div class="metadata-card">
-            <h2 style="color: #2c3e50; margin-bottom: 15px;">📊 報告清單</h2>
-            <div style="display: grid; gap: 15px;">
+            <div class="tabs">
+                <button id="year-btn" class="tab-button active" onclick="switchTab('year')">📅 按年份瀏覽</button>
+                <button id="law-btn" class="tab-button" onclick="switchTab('law')">📚 按高頻法條瀏覽</button>
+            </div>
+
+            <!-- 按年份瀏覽 -->
+            <div id="year-content" class="tab-content active">
 """
 
-        for json_file in json_files:
-            # 讀取元資料
-            with open(json_file, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-
-            metadata = data.get('metadata', {})
-            source_file = metadata.get('source_file', json_file.name)
-            total_questions = metadata.get('total_questions', 0)
-            total_options = metadata.get('total_options_processed', 0)
-
-            html_filename = json_file.stem + '.html'
+        # 生成按年份分類的內容
+        for year in sorted(years_data.keys(), reverse=True):
+            exams = years_data[year]
+            total_questions = sum(e['metadata'].get('total_questions', 0) for e in exams)
 
             html += f"""
-                <div class="metadata-item" style="padding: 20px; cursor: pointer;" onclick="window.location.href='{html_filename}'">
-                    <div>
-                        <div style="font-size: 1.2em; font-weight: 600; color: #2c3e50; margin-bottom: 8px;">
-                            {source_file}
-                        </div>
-                        <div style="color: #666; font-size: 0.95em;">
-                            題目數：{total_questions} | 選項數：{total_options}
+                <div class="year-section">
+                    <div class="year-header">
+                        <span>{year}</span>
+                        <span class="year-stats">{len(exams)} 個科目 | {total_questions} 題</span>
+                    </div>
+                    <div class="year-content">
+                        <div class="subject-grid">
+"""
+
+            for exam in exams:
+                file_info = exam['file_info']
+                metadata = exam['metadata']
+                law_stats = exam['law_stats']
+                html_filename = exam['file'].stem + '.html'
+
+                html += f"""
+                            <div class="metadata-item" style="padding: 20px; cursor: pointer;" onclick="window.location.href='{html_filename}'">
+                                <div>
+                                    <div style="font-size: 1.2em; font-weight: 600; color: #2c3e50; margin-bottom: 8px;">
+                                        {file_info['subject']}
+                                    </div>
+                                    <div style="color: #666; font-size: 0.9em; margin-bottom: 8px;">
+                                        題目：{metadata.get('total_questions', 0)} | 選項：{metadata.get('total_options_processed', 0)}
+                                    </div>
+                                    <div style="color: #999; font-size: 0.85em;">
+                                        涉及 {law_stats['total_laws']} 個法條
+                                    </div>
+                                </div>
+                                <div style="color: #3498db; font-size: 1.5em;">→</div>
+                            </div>
+"""
+
+            html += """
                         </div>
                     </div>
-                    <div style="color: #3498db; font-size: 1.5em;">→</div>
+                </div>
+"""
+
+        html += """
+            </div>
+
+            <!-- 按高頻法條瀏覽 -->
+            <div id="law-content" class="tab-content">
+                <p style="color: #666; margin-bottom: 20px;">以下是所有考試中最常被匹配的法條（前20名），點擊可查看相關考試科目</p>
+"""
+
+        # 生成法條統計
+        for law_id, law_data in sorted_all_laws:
+            details = law_data['details']
+            total_count = law_data['total_count']
+            exam_files = law_data['exam_files']
+
+            html += f"""
+                <div class="law-item">
+                    <div class="law-header">
+                        <div class="law-title">
+                            {details.get('law_name', 'N/A')} 第 {details.get('article_no', 'N/A')} 條
+                        </div>
+                        <div class="law-count-badge">總計出現 {total_count} 次</div>
+                    </div>
+                    <div style="color: #666; font-size: 0.95em; margin-bottom: 10px;">
+                        {details.get('category', 'N/A')} | 法條代碼：{law_id}
+                    </div>
+                    <div class="related-exams">
+                        <div class="related-exams-title">📋 相關考試科目：</div>
+"""
+
+            for exam_file in exam_files:
+                file_info = exam_file['file_info']
+                count = exam_file['count']
+                html_filename = exam_file['file'].stem + '.html'
+
+                html += f"""
+                        <a href="{html_filename}" class="exam-tag">
+                            {file_info['display']} ({count}次)
+                        </a>
+"""
+
+            html += """
+                    </div>
                 </div>
 """
 
@@ -478,11 +820,12 @@ body {
         </div>
 
         <div class="metadata-card">
-            <h3 style="color: #2c3e50;">ℹ️ 說明</h3>
-            <p style="line-height: 1.8; color: #555; margin-top: 10px;">
-                本報告展示了法條 Embedding 匹配結果，每個題目的選項都會顯示最相關的法條及相似度分數。
-                相似度分數越高，表示該法條與選項的語義相關性越強。
-            </p>
+            <h3 style="color: #2c3e50;">ℹ️ 使用說明</h3>
+            <ul style="line-height: 2; color: #555; margin-top: 10px; padding-left: 20px;">
+                <li><strong>按年份瀏覽</strong>：依考試年份查看各科目的法條匹配結果</li>
+                <li><strong>按高頻法條瀏覽</strong>：查看所有考試中最常出現的法條，快速定位重點法條</li>
+                <li>點擊任一科目或法條標籤即可查看詳細的匹配結果</li>
+            </ul>
         </div>
 
         <div style="text-align: center; color: #999; margin-top: 30px; padding: 20px;">
@@ -503,10 +846,16 @@ body {
         metadata = data.get('metadata', {})
         question_matches = data.get('question_matches', [])
 
+        # 解析檔名獲取年份和科目
+        file_info = self.parse_filename(json_file.name)
+
         # 檢查對應的 PDF 是否存在
         pdf_dir = self.output_dir.parent / "pdf_reports"
         pdf_file = pdf_dir / f"{json_file.stem}.pdf"
         has_pdf = pdf_file.exists()
+
+        # 收集所有匹配的法條統計
+        law_stats = self.collect_law_statistics(question_matches)
 
         # 生成 HTML
         html = f"""
@@ -536,12 +885,12 @@ body {
             <h2 style="color: #2c3e50; margin-bottom: 15px;">📋 基本資訊</h2>
             <div class="metadata-grid">
                 <div class="metadata-item">
-                    <span class="metadata-label">來源檔案</span>
-                    <span class="metadata-value">{metadata.get('source_file', 'N/A')}</span>
+                    <span class="metadata-label">考試年份</span>
+                    <span class="metadata-value">{file_info['year']}</span>
                 </div>
                 <div class="metadata-item">
-                    <span class="metadata-label">法條資料</span>
-                    <span class="metadata-value">{metadata.get('laws_csv', 'N/A')}</span>
+                    <span class="metadata-label">考試科目</span>
+                    <span class="metadata-value">{file_info['subject']}</span>
                 </div>
                 <div class="metadata-item">
                     <span class="metadata-label">題目總數</span>
@@ -553,11 +902,44 @@ body {
                 </div>
             </div>
         </div>
+
+        <div class="metadata-card">
+            <h2 style="color: #2c3e50; margin-bottom: 15px;">📚 高頻法條統計</h2>
+            <p style="color: #666; margin-bottom: 15px;">以下是本次考試中最常被匹配的法條（前10名）</p>
+            <div style="display: grid; gap: 10px;">
+        """
+
+        # 顯示前10個高頻法條
+        for law_id, count, details in law_stats['top_laws']:
+            html += f"""
+                <div style="padding: 15px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #e74c3c;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-weight: 600; color: #2c3e50; margin-bottom: 5px;">
+                                {details.get('law_name', 'N/A')} 第 {details.get('article_no', 'N/A')} 條
+                            </div>
+                            <div style="font-size: 0.9em; color: #666;">
+                                {details.get('category', 'N/A')} | 法條代碼：{law_id}
+                            </div>
+                        </div>
+                        <div style="background: #e74c3c; color: white; padding: 8px 15px; border-radius: 20px; font-weight: 600;">
+                            出現 {count} 次
+                        </div>
+                    </div>
+                </div>
+        """
+
+        html += """
+            </div>
+            <div style="margin-top: 15px; padding: 12px; background: #e8f4f8; border-radius: 8px; border-left: 4px solid #3498db;">
+                <strong>💡 提示：</strong>高頻法條代表在本次考試中較常被考查，建議優先複習這些法條。
+            </div>
+        </div>
 """
 
         # 生成每個題目的 HTML
         for question in question_matches:
-            html += self.generate_question_html(question)
+            html += self.generate_question_html(question, file_info)
 
         html += f"""
         <div style="text-align: center; color: #999; margin-top: 30px; padding: 20px;">
@@ -569,13 +951,16 @@ body {
 """
         return html
 
-    def generate_question_html(self, question: Dict[str, Any]) -> str:
+    def generate_question_html(self, question: Dict[str, Any], file_info: Dict[str, str]) -> str:
         """生成單個題目的 HTML"""
         html = f"""
         <div class="question-card">
             <div class="question-header">
                 <div class="question-number">第 {question.get('question_number', 'N/A')} 題</div>
-                <div class="correct-answer-badge">正確答案：{question.get('correct_answer', 'N/A')}</div>
+                <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 5px;">
+                    <div style="font-size: 0.9em; opacity: 0.9;">{file_info['display']}</div>
+                    <div class="correct-answer-badge">正確答案：{question.get('correct_answer', 'N/A')}</div>
+                </div>
             </div>
 
             <div class="question-content">
