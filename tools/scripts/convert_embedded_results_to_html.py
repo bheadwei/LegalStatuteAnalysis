@@ -1007,7 +1007,7 @@ body {
                                     <div class="article-meta-item">{article.get('authority', 'N/A')}</div>
                                     <div class="article-meta-item">法條代碼：{article.get('id', 'N/A')}</div>
                                 </div>
-                                <div class="article-content">{article.get('content', 'N/A')[:300]}...</div>
+                                <div class="article-content">{article.get('content', 'N/A')}</div>
                             </div>
 """
 
