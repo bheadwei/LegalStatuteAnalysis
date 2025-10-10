@@ -11,16 +11,16 @@ python = ">=3.12,<3.14"
 # Core dependencies
 rich = "^13.7.0"
 click = "^8.1.7"
-python-dotenv = "*"
-numpy = "*"
-pandas = "*"
-pydantic = "*"
+python-dotenv = "^1.0.0"
+numpy = "^1.26.0"
+pandas = "^2.0.0"
+pydantic = "^2.0.0"
 
 # LLM and AI dependencies
 openai = "^1.0.0"
 google-generativeai = "^0.3.0"
-langchain = "*"
-langchain-openai = "*"
+langchain = "^0.1.0"
+langchain-openai = "^0.1.0"
 
 # PDF processing (optional - can be removed if not needed)
 mineru = {extras = ["core"], version = "^2.1.0", optional = true}
@@ -28,11 +28,11 @@ mineru = {extras = ["core"], version = "^2.1.0", optional = true}
 # Document processing
 python-docx = "^1.2.0"
 pillow = "^11.3.0"
-markdown = "*"
+markdown = "^3.5.0"
 
 # GPU support (optional)
-torch = {version = "^2.0.0", optional = true}
-torchvision = {version = "^0.15.0", optional = true}
+torch = {version = "^2.6.0", optional = true}
+torchvision = {version = "^0.21.0", optional = true}
 transformers = {version = "^4.30.0", optional = true}
 weasyprint = "^66.0"
 wkhtmltopdf = "^0.2"

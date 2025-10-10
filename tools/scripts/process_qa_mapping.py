@@ -162,8 +162,8 @@ def merge_questions_and_answers(questions: List[Dict], answers: Dict[int, str]) 
                 "question_number": 1,
                 "question_text": "...",
                 "options": {"A": "...", "B": "...", "C": "...", "D": "..."},
-                "answer": "A",
-                "answer_index": 0
+                "answer": "A",  # 若無答案則為 null
+                "answer_index": 0  # 若無答案則為 null
             },
             ...
         ]
@@ -174,16 +174,25 @@ def merge_questions_and_answers(questions: List[Dict], answers: Dict[int, str]) 
         q_num = q['question_number']
         answer_letter = answers.get(q_num, None)
 
+        # 修改：保留所有題目，即使沒有答案
         if answer_letter:
-            # 計算答案索引 (A=0, B=1, C=2, D=3)
+            # 有答案：計算答案索引 (A=0, B=1, C=2, D=3)
             answer_index = ord(answer_letter) - ord('A')
-
             merged.append({
                 "question_number": q_num,
                 "question_text": q['question_text'],
                 "options": q['options'],  # 已經是 dict 格式 {"A": "...", "B": "...", ...}
                 "answer": answer_letter,
                 "answer_index": answer_index
+            })
+        else:
+            # 沒有答案：仍然保留題目，但答案為 null
+            merged.append({
+                "question_number": q_num,
+                "question_text": q['question_text'],
+                "options": q['options'],
+                "answer": None,
+                "answer_index": None
             })
 
     return merged
