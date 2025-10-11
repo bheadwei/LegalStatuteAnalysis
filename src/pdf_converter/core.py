@@ -178,35 +178,41 @@ class PDFToMarkdownConverter:
         self.sections = sections
         return sections
     
-    def process_pdf(self, pdf_path: Path, output_path: Optional[Path] = None) -> str:
-        """處理單個 PDF 文件 - 使用 MinerU"""
+    def process_pdf(self, pdf_path: Path, output_path: Optional[Path] = None, use_gpu: bool = True) -> str:
+        """處理單個 PDF 文件 - 使用 MinerU
+
+        Args:
+            pdf_path: PDF 檔案路徑
+            output_path: 輸出 Markdown 檔案路徑（可選）
+            use_gpu: 是否使用 GPU 加速（預設為 True）
+        """
         try:
             # 創建臨時目錄用於 MinerU 輸出
             with tempfile.TemporaryDirectory() as temp_dir:
                 temp_path = Path(temp_dir)
-                
-                # 使用 MinerU 轉換 PDF
-                mineru_output = self._run_mineru(pdf_path, temp_path)
-                
+
+                # 使用 MinerU 轉換 PDF，傳遞 use_gpu 參數
+                mineru_output = self._run_mineru(pdf_path, temp_path, use_gpu=use_gpu)
+
                 # 讀取 MinerU 生成的 Markdown
                 with open(mineru_output, 'r', encoding='utf-8') as f:
                     raw_markdown = f.read()
-                
+
                 # 後處理 Markdown 內容
                 markdown_content = self._post_process_markdown(raw_markdown)
-                
+
                 # 分析結構（用於統計）
                 self._analyze_markdown_structure(markdown_content)
-                
+
                 # 保存文件
                 if output_path:
                     output_path.parent.mkdir(parents=True, exist_ok=True)
                     with open(output_path, 'w', encoding='utf-8') as f:
                         f.write(markdown_content)
                     self.logger.info(f"Markdown 文件已保存至: {output_path}")
-                
+
                 return markdown_content
-            
+
         except Exception as e:
             self.logger.error(f"處理 PDF 失敗: {e}")
             raise
