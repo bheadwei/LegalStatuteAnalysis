@@ -639,6 +639,7 @@ body {
         # 收集所有文件的資訊
         years_data = {}  # year -> [{file_info, metadata, law_stats}, ...]
         all_laws = {}  # law_id -> {details, count, exam_files}
+        law_articles_map = {}  # law_id -> {law_details, full_content, related_questions[]}
 
         for json_file in json_files:
             # 讀取 JSON 資料
@@ -681,6 +682,38 @@ body {
                     'count': count
                 })
 
+            # 收集法條與題目的對應關係（用於第三個分頁：按法條瀏覽題目）
+            for question in question_matches:
+                question_no = question.get('question_number')
+                question_text = question.get('question_text', '')
+
+                # 遍歷所有選項的匹配法條
+                for option in question.get('options', []):
+                    for article in option.get('matched_articles', [])[:3]:  # 只取前3個最相關的
+                        law_id = article.get('id')
+                        if law_id:
+                            if law_id not in law_articles_map:
+                                law_articles_map[law_id] = {
+                                    'law_name': article.get('law_name'),
+                                    'article_no_main': article.get('article_no_main'),
+                                    'content': article.get('content'),
+                                    'category': article.get('category'),
+                                    'authority': article.get('authority'),
+                                    'related_questions': []
+                                }
+
+                            # 避免重複加入同一題
+                            existing_q = [q for q in law_articles_map[law_id]['related_questions']
+                                         if q['question_no'] == question_no and q['exam_file'] == json_file.stem]
+                            if not existing_q:
+                                law_articles_map[law_id]['related_questions'].append({
+                                    'question_no': question_no,
+                                    'question_text': question_text,
+                                    'file_info': file_info,
+                                    'exam_file': json_file.stem,
+                                    'similarity': article.get('similarity', 0)
+                                })
+
         # 排序法條（按總出現次數）
         sorted_all_laws = sorted(all_laws.items(), key=lambda x: x[1]['total_count'], reverse=True)[:20]
 
@@ -720,6 +753,7 @@ body {
             <div class="tabs">
                 <button id="year-btn" class="tab-button active" onclick="switchTab('year')">📅 按年份瀏覽</button>
                 <button id="law-btn" class="tab-button" onclick="switchTab('law')">📚 按高頻法條瀏覽</button>
+                <button id="article-btn" class="tab-button" onclick="switchTab('article')">📖 按法條瀏覽題目</button>
             </div>
 
             <!-- 按年份瀏覽 -->
@@ -815,6 +849,100 @@ body {
                 </div>
 """
 
+        html += """
+            </div>
+
+            <!-- 按法條瀏覽題目 -->
+            <div id="article-content" class="tab-content">
+                <p style="color: #666; margin-bottom: 20px;">以下按法條分類，顯示每個法條及其相關考題。法條按相關題目數量排序，點擊題目標籤可跳轉至該題</p>
+"""
+
+        # 排序法條（按相關題目數量）
+        sorted_law_articles = sorted(law_articles_map.items(),
+                                     key=lambda x: len(x[1]['related_questions']),
+                                     reverse=True)
+
+        # 生成法條與題目的對應內容
+        for law_id, law_data in sorted_law_articles:
+            law_name = law_data['law_name']
+            article_no = law_data['article_no_main']
+            content = law_data['content']
+            category = law_data['category']
+            authority = law_data['authority']
+            related_questions = law_data['related_questions']
+
+            html += f"""
+                <div class="law-item" style="margin-bottom: 30px;">
+                    <div class="law-header">
+                        <div class="law-title">
+                            {law_name} 第 {article_no} 條
+                        </div>
+                        <div class="law-count-badge">相關 {len(related_questions)} 題</div>
+                    </div>
+                    <div style="color: #666; font-size: 0.95em; margin-bottom: 15px;">
+                        {category} | {authority} | 法條代碼：{law_id}
+                    </div>
+
+                    <!-- 法條內容 -->
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #e74c3c;">
+                        <div style="font-weight: 600; color: #2c3e50; margin-bottom: 10px;">📜 法條內容：</div>
+                        <div style="line-height: 1.8; color: #555;">
+                            {self.format_article_content(content)}
+                        </div>
+                    </div>
+
+                    <!-- 相關題目 -->
+                    <div class="related-exams">
+                        <div class="related-exams-title">📝 相關題目：</div>
+"""
+
+            # 按考試科目分組題目
+            exam_groups = {}
+            for q in related_questions:
+                exam_file = q['exam_file']
+                if exam_file not in exam_groups:
+                    exam_groups[exam_file] = {
+                        'file_info': q['file_info'],
+                        'questions': []
+                    }
+                exam_groups[exam_file]['questions'].append(q)
+
+            # 生成每個考試科目的題目列表
+            for exam_file, exam_group in exam_groups.items():
+                file_info = exam_group['file_info']
+                questions = exam_group['questions']
+
+                html += f"""
+                        <div style="margin-bottom: 15px;">
+                            <div style="font-weight: 600; color: #2c3e50; margin-bottom: 8px;">
+                                {file_info['display']}
+                            </div>
+"""
+
+                for q in sorted(questions, key=lambda x: x['question_no']):
+                    question_no = q['question_no']
+                    question_text = q['question_text']
+                    # 截斷過長的題目文字
+                    if len(question_text) > 80:
+                        question_text = question_text[:80] + '...'
+
+                    html += f"""
+                            <a href="{exam_file}.html#q{question_no}" class="exam-tag"
+                               style="display: block; margin-bottom: 8px; padding: 10px 15px;"
+                               title="{q['question_text']}">
+                                第 {question_no} 題：{question_text}
+                            </a>
+"""
+
+                html += """
+                        </div>
+"""
+
+            html += """
+                    </div>
+                </div>
+"""
+
         html += f"""
             </div>
         </div>
@@ -824,7 +952,8 @@ body {
             <ul style="line-height: 2; color: #555; margin-top: 10px; padding-left: 20px;">
                 <li><strong>按年份瀏覽</strong>：依考試年份查看各科目的法條匹配結果</li>
                 <li><strong>按高頻法條瀏覽</strong>：查看所有考試中最常出現的法條，快速定位重點法條</li>
-                <li>點擊任一科目或法條標籤即可查看詳細的匹配結果</li>
+                <li><strong>按法條瀏覽題目</strong>：依法條分類，查看每個法條及其相關考題，方便學習特定法條</li>
+                <li>點擊任一科目、法條或題目標籤即可查看詳細的匹配結果</li>
             </ul>
         </div>
 
@@ -984,10 +1113,11 @@ body {
 
     def generate_question_html(self, question: Dict[str, Any], file_info: Dict[str, str]) -> str:
         """生成單個題目的 HTML"""
+        question_no = question.get('question_number', 'N/A')
         html = f"""
-        <div class="question-card">
+        <div class="question-card" id="q{question_no}">
             <div class="question-header">
-                <div class="question-number">第 {question.get('question_number', 'N/A')} 題</div>
+                <div class="question-number">第 {question_no} 題</div>
                 <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 5px;">
                     <div style="font-size: 0.9em; opacity: 0.9;">{file_info['display']}</div>
                     <div class="correct-answer-badge">正確答案：{question.get('correct_answer', 'N/A')}</div>
