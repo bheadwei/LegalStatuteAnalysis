@@ -951,6 +951,37 @@ body {
 """
         return html
 
+    def format_article_content(self, content: str) -> str:
+        """
+        格式化法條內容，在編號後自動換行
+
+        Args:
+            content: 原始法條內容
+
+        Returns:
+            格式化後的 HTML 內容
+        """
+        import re
+
+        if not content:
+            return content
+
+        # 處理數字編號（1、2、3 等）後面接空格的情況
+        content = re.sub(r'(\d+)\s+', r'\1 ', content)
+
+        # 在數字編號後插入換行（1 xxx、2 xxx、3 xxx）
+        # 匹配：數字 + 空格 + 文字
+        content = re.sub(r'(\d+\s+)(?=[^0-9])', r'<br>\1', content)
+
+        # 在中文編號後插入換行（一、二、三、四、五、六、七、八、九、十）
+        # 匹配：中文數字 + 頓號或句號 + 文字
+        content = re.sub(r'([一二三四五六七八九十百千萬]+、)', r'<br>\1', content)
+
+        # 移除開頭多餘的 <br>
+        content = content.lstrip('<br>')
+
+        return content
+
     def generate_question_html(self, question: Dict[str, Any], file_info: Dict[str, str]) -> str:
         """生成單個題目的 HTML"""
         html = f"""
@@ -1007,7 +1038,7 @@ body {
                                     <div class="article-meta-item">{article.get('authority', 'N/A')}</div>
                                     <div class="article-meta-item">法條代碼：{article.get('id', 'N/A')}</div>
                                 </div>
-                                <div class="article-content">{article.get('content', 'N/A')}</div>
+                                <div class="article-content">{self.format_article_content(article.get('content', 'N/A'))}</div>
                             </div>
 """
 
