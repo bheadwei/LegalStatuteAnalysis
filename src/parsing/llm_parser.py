@@ -122,7 +122,43 @@ def parse_questions_with_llm(markdown_content: str) -> Optional[QuestionPaper]:
         logger.info("Successfully parsed question paper.")
         return parsed_result
     except Exception as e:
-        logger.error(f"Failed to parse question paper with LLM: {e}", exc_info=True)
+        # Try to extract JSON from markdown code block if parser failed
+        error_msg = str(e)
+        if "Invalid json output:" in error_msg or "```json" in error_msg:
+            logger.warning("Attempting to extract JSON from markdown code block...")
+            try:
+                import re
+                import json
+                # Extract JSON from error message or try to get raw response
+                json_match = re.search(r'```json\s*(\{.*?\})\s*```', error_msg, re.DOTALL)
+                if json_match:
+                    json_str = json_match.group(1)
+                    # Fix invalid escape sequences by doubling backslashes
+                    # This handles LaTeX escapes like \%, \cdot, \underline, etc.
+                    # We need to be careful not to break valid JSON escapes like \n, \t, \uXXXX
+                    import re
+                    def fix_escape(match):
+                        next_char = match.group(1) if match.group(1) else ''
+                        # Valid JSON escapes: \n, \t, \r, \b, \f, \", \\, \/
+                        if next_char in ['n', 't', 'r', 'b', 'f', '"', '/', '\\']:
+                            return match.group(0)  # Keep valid escapes
+                        # Check for valid Unicode escape: \uXXXX (4 hex digits)
+                        if next_char == 'u':
+                            remaining = match.string[match.end():]
+                            if len(remaining) >= 4 and all(c in '0123456789abcdefABCDEF' for c in remaining[:4]):
+                                return match.group(0)  # Valid Unicode escape
+                        # All other cases: double the backslash
+                        return '\\\\' + next_char
+
+                    json_str = re.sub(r'\\(.?)', fix_escape, json_str)
+                    json_data = json.loads(json_str)
+                    parsed_result = QuestionPaper(**json_data)
+                    logger.info("Successfully extracted and parsed JSON from code block.")
+                    return parsed_result
+            except Exception as parse_error:
+                logger.error(f"Failed to extract JSON from code block: {parse_error}")
+
+        logger.error(f"Failed to parse question paper with LLM: {e}")
         return None
 
 def parse_answers_with_llm(markdown_content: str) -> Optional[AnswerKey]:
@@ -134,7 +170,38 @@ def parse_answers_with_llm(markdown_content: str) -> Optional[AnswerKey]:
         logger.info(f"Successfully parsed answer key.")
         return parsed_result
     except Exception as e:
-        logger.error(f"Failed to parse answer key with LLM: {e}", exc_info=True)
+        # Try to extract JSON from markdown code block if parser failed
+        error_msg = str(e)
+        if "Invalid json output:" in error_msg or "```json" in error_msg:
+            logger.warning("Attempting to extract JSON from markdown code block...")
+            try:
+                import re
+                import json
+                # Extract JSON from error message
+                json_match = re.search(r'```json\s*(\{.*?\})\s*```', error_msg, re.DOTALL)
+                if json_match:
+                    json_str = json_match.group(1)
+                    # Fix invalid escape sequences (same as in parse_questions_with_llm)
+                    def fix_escape(match):
+                        next_char = match.group(1) if match.group(1) else ''
+                        # Valid JSON escapes: \n, \t, \r, \b, \f, \", \\, \/
+                        if next_char in ['n', 't', 'r', 'b', 'f', '"', '/', '\\']:
+                            return match.group(0)
+                        # Check for valid Unicode escape: \uXXXX (4 hex digits)
+                        if next_char == 'u':
+                            remaining = match.string[match.end():]
+                            if len(remaining) >= 4 and all(c in '0123456789abcdefABCDEF' for c in remaining[:4]):
+                                return match.group(0)
+                        return '\\\\' + next_char
+                    json_str = re.sub(r'\\(.?)', fix_escape, json_str)
+                    json_data = json.loads(json_str)
+                    parsed_result = AnswerKey(**json_data)
+                    logger.info("Successfully extracted and parsed JSON from code block.")
+                    return parsed_result
+            except Exception as parse_error:
+                logger.error(f"Failed to extract JSON from code block: {parse_error}")
+
+        logger.error(f"Failed to parse answer key with LLM: {e}")
         return None
 
 # --- Merging Function ---
