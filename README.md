@@ -254,6 +254,56 @@ poetry run python tools/scripts/process_single_exam.py --question ... --answer .
 - `embedded_results/` - 完整的對應結果（包含 Embedding 向量）
 - `html_reports/` - **最重要**，直接開啟 `index.html` 查看報告
 
+## 🌐 Web 瀏覽介面
+
+### 啟動 Web 伺服器
+
+除了直接開啟 HTML 檔案，你也可以啟動 Web 伺服器來瀏覽報告：
+
+```bash
+# 啟動 FastAPI Web 伺服器
+poetry run python tools/scripts/web_server.py
+```
+
+伺服器啟動後：
+- 🌐 訪問網址：http://localhost:8000
+- 📊 API 文檔：http://localhost:8000/docs
+- 🛑 停止服務：按 `Ctrl+C`
+
+### Web 伺服器功能
+
+1. **靜態報告瀏覽**
+   - 自動載入所有 HTML 報告
+   - 支援三種瀏覽模式（按年份、按法條、按高頻法條）
+   - 深色模式自動適配
+
+2. **REST API 端點**
+   ```bash
+   GET /api/reports     # 列出所有報告
+   GET /api/stats       # 獲取統計資訊
+   GET /health          # 健康檢查
+   ```
+
+3. **現代化 UI/UX**
+   - 平滑滾動效果
+   - 載入動畫
+   - 響應式設計（支援手機、平板）
+   - 自訂滾動條樣式
+   - 懸停互動效果
+
+### API 使用範例
+
+```bash
+# 列出所有報告
+curl http://localhost:8000/api/reports
+
+# 獲取統計資訊
+curl http://localhost:8000/api/stats
+
+# 健康檢查
+curl http://localhost:8000/health
+```
+
 ## 🐛 常見問題
 
 ### Q: GPU 加速無法使用？
