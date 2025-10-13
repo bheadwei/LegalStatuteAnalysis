@@ -165,7 +165,7 @@ function renderReportQuestions(reportId, questions) {
 }
 
 /**
- * 渲染單個題目（顯示所有選項）
+ * 渲染單個題目（可收合，顯示所有選項）
  */
 function renderQuestion(reportId, question) {
     const questionId = `${reportId}-${question.question_number}`;
@@ -206,11 +206,14 @@ function renderQuestion(reportId, question) {
 
     return `
         <div class="question-card-full">
-            <div class="question-header-full">
-                <span class="question-number-badge">題 ${question.question_number}</span>
+            <div class="question-header-full" onclick="toggleQuestionBody('${questionId}')">
+                <span class="question-number-badge">
+                    題 ${question.question_number}
+                    <span class="question-toggle-icon collapsed" id="toggle-${questionId}">▼</span>
+                </span>
                 <span class="correct-answer-info">正確答案：${question.correct_answer}</span>
             </div>
-            <div class="question-body-full">
+            <div class="question-body-full" id="body-${questionId}">
                 <div class="question-text">${question.question_text}</div>
                 <div class="options-container">
                     ${optionsHtml}
@@ -220,7 +223,21 @@ function renderQuestion(reportId, question) {
     `;
 }
 
-// 移除舊的收合/展開功能（現在一次顯示所有選項）
+/**
+ * 切換題目展開/收合
+ */
+function toggleQuestionBody(questionId) {
+    const body = document.getElementById(`body-${questionId}`);
+    const toggle = document.getElementById(`toggle-${questionId}`);
+
+    if (body.classList.contains('expanded')) {
+        body.classList.remove('expanded');
+        toggle.classList.add('collapsed');
+    } else {
+        body.classList.add('expanded');
+        toggle.classList.remove('collapsed');
+    }
+}
 
 /**
  * 顯示錯誤訊息

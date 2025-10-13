@@ -100,7 +100,7 @@ function renderLaws(laws) {
     });
 
     // 渲染分組
-    const groupsHtml = Object.values(lawsByName).map(group => {
+    const groupsHtml = Object.values(lawsByName).map((group, index) => {
         const articlesHtml = group.articles.map(law => `
             <div class="law-card" onclick="viewLawDetail('${law.law_id}')">
                 <div class="law-card-header">
@@ -119,10 +119,21 @@ function renderLaws(laws) {
             </div>
         `).join('');
 
+        const hasMoreThan10 = group.articles.length > 10;
+        const toggleButtonHtml = hasMoreThan10 ? `
+            <button class="toggle-law-btn" onclick="toggleLawGroup(${index})">
+                <span id="toggle-text-${index}">顯示全部</span>
+                <span id="toggle-icon-${index}">▼</span>
+            </button>
+        ` : '';
+
         return `
             <div class="law-group">
-                <h2 class="law-group-title">${group.law_name}</h2>
-                <div class="law-grid">
+                <div class="law-group-header">
+                    <h2 class="law-group-title">${group.law_name} (${group.articles.length} 個條文)</h2>
+                    ${toggleButtonHtml}
+                </div>
+                <div class="law-grid law-cards-collapsible ${hasMoreThan10 ? 'collapsed' : ''}" id="law-cards-${index}">
                     ${articlesHtml}
                 </div>
             </div>
@@ -157,6 +168,25 @@ function setupSearchBox() {
 
         renderLaws(filteredLaws);
     });
+}
+
+/**
+ * 切換法條組的展開/收合
+ */
+function toggleLawGroup(groupIndex) {
+    const cardsContainer = document.getElementById(`law-cards-${groupIndex}`);
+    const toggleText = document.getElementById(`toggle-text-${groupIndex}`);
+    const toggleIcon = document.getElementById(`toggle-icon-${groupIndex}`);
+
+    if (cardsContainer.classList.contains('collapsed')) {
+        cardsContainer.classList.remove('collapsed');
+        toggleText.textContent = '收合';
+        toggleIcon.textContent = '▲';
+    } else {
+        cardsContainer.classList.add('collapsed');
+        toggleText.textContent = '顯示全部';
+        toggleIcon.textContent = '▼';
+    }
 }
 
 /**
