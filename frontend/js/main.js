@@ -65,7 +65,7 @@ async function loadLaws() {
 }
 
 /**
- * 渲染法條卡片
+ * 渲染法條卡片（按法律名稱分組）
  */
 function renderLaws(laws) {
     const lawsSection = document.getElementById('laws-section');
@@ -81,26 +81,55 @@ function renderLaws(laws) {
         return;
     }
 
-    const lawsHtml = laws.map(law => `
-        <div class="law-card" onclick="viewLawDetail('${law.law_id}')">
-            <div class="law-card-header">
-                <div class="law-name">${law.law_name}</div>
-                <div class="law-article">${law.article_no}</div>
-            </div>
-            <div class="law-card-body">
-                <span class="law-category">${law.category}</span>
-            </div>
-            <div class="law-card-footer">
-                <div class="match-count">
-                    <span>匹配次數</span>
-                    <span class="match-count-badge">${law.matched_count}</span>
-                </div>
-                <div style="color: var(--neutral-400); font-size: 1.25rem;">→</div>
-            </div>
-        </div>
-    `).join('');
+    // 按法律名稱分組
+    const lawsByName = {};
+    laws.forEach(law => {
+        if (!lawsByName[law.law_name]) {
+            lawsByName[law.law_name] = {
+                law_name: law.law_name,
+                category: law.category,
+                articles: []
+            };
+        }
+        lawsByName[law.law_name].articles.push(law);
+    });
 
-    lawsSection.innerHTML = `<div class="law-grid">${lawsHtml}</div>`;
+    // 按匹配次數排序每個法律的條文
+    Object.values(lawsByName).forEach(group => {
+        group.articles.sort((a, b) => b.matched_count - a.matched_count);
+    });
+
+    // 渲染分組
+    const groupsHtml = Object.values(lawsByName).map(group => {
+        const articlesHtml = group.articles.map(law => `
+            <div class="law-card" onclick="viewLawDetail('${law.law_id}')">
+                <div class="law-card-header">
+                    <div class="law-article-number">${law.article_no}</div>
+                </div>
+                <div class="law-card-body">
+                    <span class="law-category">${law.category}</span>
+                </div>
+                <div class="law-card-footer">
+                    <div class="match-count">
+                        <span>匹配次數</span>
+                        <span class="match-count-badge">${law.matched_count}</span>
+                    </div>
+                    <div style="color: var(--neutral-400); font-size: 1.25rem;">→</div>
+                </div>
+            </div>
+        `).join('');
+
+        return `
+            <div class="law-group">
+                <h2 class="law-group-title">${group.law_name}</h2>
+                <div class="law-grid">
+                    ${articlesHtml}
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    lawsSection.innerHTML = groupsHtml;
 }
 
 /**

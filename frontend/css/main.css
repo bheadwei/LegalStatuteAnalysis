@@ -150,12 +150,24 @@ body {
     color: var(--neutral-700);
 }
 
-/* ========== 法條卡片（首頁）========== */
+/* ========== 法條分組（首頁）========== */
+.law-group {
+    margin-bottom: var(--spacing-2xl);
+}
+
+.law-group-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--neutral-900);
+    border-bottom: 2px solid var(--neutral-200);
+    padding-bottom: var(--spacing-md);
+    margin-bottom: var(--spacing-xl);
+}
+
 .law-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: var(--spacing-lg);
-    margin-top: var(--spacing-xl);
 }
 
 .law-card {
@@ -189,6 +201,12 @@ body {
 .law-article {
     font-size: 0.875rem;
     color: var(--neutral-600);
+}
+
+.law-article-number {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--primary-700);
 }
 
 .law-card-body {
