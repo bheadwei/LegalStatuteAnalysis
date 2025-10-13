@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="法條智能匹配系統 - 法律考試題目與法條智能對應分析">
+    <title>法條智能匹配系統</title>
+    <link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+    <!-- 頁面標題 -->
+    <header class="page-header">
+        <div class="container">
+            <h1>📚 法條智能匹配系統</h1>
+            <p>法律考試題目與法條智能對應分析</p>
+        </div>
+    </header>
+
+    <!-- 主要內容 -->
+    <main class="container">
+        <!-- 統計資訊 -->
+        <section id="stats-section" class="stats-grid">
+            <!-- 由 JS 動態填充 -->
+        </section>
+
+        <!-- 搜尋框 -->
+        <section style="margin-bottom: 2rem;">
+            <input
+                type="text"
+                class="search-box"
+                id="search-box"
+                placeholder="🔍 搜尋法條名稱、法律代碼或條文號..."
+                autocomplete="off"
+            >
+        </section>
+
+        <!-- 法條卡片網格 -->
+        <section id="laws-section">
+            <!-- 由 JS 動態填充 -->
+        </section>
+    </main>
+
+    <!-- 返回頂部按鈕 -->
+    <button id="back-to-top" class="btn btn-primary" style="position: fixed; bottom: 2rem; right: 2rem; display: none;">
+        ↑ 回到頂部
+    </button>
+
+    <!-- JavaScript -->
+    <script src="/js/api.js"></script>
+    <script src="/js/main.js"></script>
+</body>
+</html>
