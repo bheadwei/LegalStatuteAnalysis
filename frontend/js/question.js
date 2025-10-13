@@ -69,16 +69,28 @@ function renderLawInfo() {
 }
 
 /**
- * 格式化法條內容（處理換行）
+ * 格式化法條內容（條列式呈現）
  */
 function formatLawContent(content) {
-    // 將 # 符號替換為換行
-    return content
+    // 將 # 符號分割，製作成編號列表
+    const lines = content
         .split('#')
         .map(line => line.trim())
-        .filter(line => line.length > 0)
-        .map(line => `<p style="margin-bottom: 0.5rem;">${line}</p>`)
+        .filter(line => line.length > 0);
+
+    if (lines.length === 0) return '';
+
+    // 如果只有一行，直接返回
+    if (lines.length === 1) {
+        return `<p style="line-height: 1.8; color: var(--neutral-800);">${lines[0]}</p>`;
+    }
+
+    // 多行時使用編號列表
+    const listItems = lines
+        .map((line, index) => `<li style="margin-bottom: 0.75rem; line-height: 1.8;">${line}</li>`)
         .join('');
+
+    return `<ol style="padding-left: 1.5rem; color: var(--neutral-800);">${listItems}</ol>`;
 }
 
 /**
@@ -106,13 +118,10 @@ function renderQuestions() {
     }).join('');
 
     questionsSection.innerHTML = questionsHtml;
-
-    // 綁定收合事件
-    setupToggleEvents();
 }
 
 /**
- * 按考卷分組題目
+ * 按考卷分組題目（新數據結構：每題包含所有選項）
  */
 function groupQuestionsByReport(questions) {
     const grouped = {};
@@ -141,27 +150,14 @@ function renderReportQuestions(reportId, questions) {
     const year = parts[0].substring(0, 3);  // 113
     const subject = parts[2];  // 民法概要
 
-    // 按題號分組（因為一個題目可能有多個選項匹配）
-    const questionsByNumber = {};
-    questions.forEach(q => {
-        if (!questionsByNumber[q.question_number]) {
-            questionsByNumber[q.question_number] = {
-                question_number: q.question_number,
-                question_text: q.question_text,
-                options: []
-            };
-        }
-        questionsByNumber[q.question_number].options.push(q);
-    });
-
-    const questionsHtml = Object.values(questionsByNumber).map(question => {
+    const questionsHtml = questions.map(question => {
         return renderQuestion(reportId, question);
     }).join('');
 
     return `
         <div style="margin-bottom: 2rem;">
-            <h3 style="color: var(--primary-700); font-size: 1.25rem; margin-bottom: 1rem;">
-                ${year} 年 - ${subject}
+            <h3 style="color: var(--primary-700); font-size: 1.25rem; margin-bottom: 1rem; font-weight: 700;">
+                📝 ${year} 年 - ${subject}
             </h3>
             ${questionsHtml}
         </div>
@@ -169,39 +165,54 @@ function renderReportQuestions(reportId, questions) {
 }
 
 /**
- * 渲染單個題目（可收合）
+ * 渲染單個題目（顯示所有選項）
  */
 function renderQuestion(reportId, question) {
     const questionId = `${reportId}-${question.question_number}`;
 
-    const optionsHtml = question.options.map(opt => `
-        <div style="background: var(--neutral-50); border: 1px solid var(--neutral-200); border-radius: var(--radius-md); padding: 1rem; margin-bottom: 0.75rem;">
-            <div style="display: flex; gap: 0.75rem; margin-bottom: 0.5rem;">
-                <div style="flex-shrink: 0; width: 2rem; height: 2rem; background: var(--primary-500); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700;">
-                    ${opt.option_letter}
-                </div>
-                <div style="flex: 1; padding-top: 0.125rem;">
-                    ${opt.option_text}
+    // 渲染所有選項
+    const optionsHtml = question.all_options.map(opt => {
+        // 判斷樣式
+        const isCorrect = opt.is_correct;
+        const matchedTarget = opt.matched_target;
+
+        let optionClass = 'option-item';
+        let badgeHtml = '';
+        let similarityHtml = '';
+
+        if (isCorrect) {
+            optionClass += ' correct-option';
+            badgeHtml = '<span class="correct-badge">✓ 正確答案</span>';
+        }
+
+        if (matchedTarget) {
+            badgeHtml += `<span class="matched-badge">🎯 匹配此法條 (${UIUtils.formatPercentage(opt.similarity)})</span>`;
+        }
+
+        return `
+            <div class="${optionClass}">
+                <div style="display: flex; gap: 0.75rem; align-items: start;">
+                    <div class="option-letter-circle ${isCorrect ? 'correct' : ''}">
+                        ${opt.option_letter}
+                    </div>
+                    <div style="flex: 1;">
+                        <div class="option-text">${opt.option_text}</div>
+                        ${badgeHtml ? `<div class="option-badges">${badgeHtml}</div>` : ''}
+                    </div>
                 </div>
             </div>
-            <div style="margin-left: 2.75rem; color: var(--neutral-600); font-size: 0.875rem;">
-                相似度：${UIUtils.formatPercentage(opt.similarity)}
-            </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 
     return `
-        <div class="question-card">
-            <div class="question-header" onclick="toggleQuestion('${questionId}')">
-                <div class="question-number">題 ${question.question_number}</div>
-                <div class="question-toggle" id="toggle-${questionId}">▼</div>
+        <div class="question-card-full">
+            <div class="question-header-full">
+                <span class="question-number-badge">題 ${question.question_number}</span>
+                <span class="correct-answer-info">正確答案：${question.correct_answer}</span>
             </div>
-            <div class="question-body" id="body-${questionId}">
+            <div class="question-body-full">
                 <div class="question-text">${question.question_text}</div>
-                <div style="margin-top: 1.5rem;">
-                    <h4 style="font-size: 0.875rem; font-weight: 600; color: var(--neutral-600); margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.05em;">
-                        匹配的選項
-                    </h4>
+                <div class="options-container">
                     ${optionsHtml}
                 </div>
             </div>
@@ -209,35 +220,7 @@ function renderQuestion(reportId, question) {
     `;
 }
 
-/**
- * 設定收合/展開事件
- */
-function setupToggleEvents() {
-    // 所有題目預設收合
-    document.querySelectorAll('.question-body').forEach(body => {
-        body.classList.remove('expanded');
-    });
-
-    document.querySelectorAll('.question-toggle').forEach(toggle => {
-        toggle.classList.add('collapsed');
-    });
-}
-
-/**
- * 切換題目展開/收合
- */
-function toggleQuestion(questionId) {
-    const body = document.getElementById(`body-${questionId}`);
-    const toggle = document.getElementById(`toggle-${questionId}`);
-
-    if (body.classList.contains('expanded')) {
-        body.classList.remove('expanded');
-        toggle.classList.add('collapsed');
-    } else {
-        body.classList.add('expanded');
-        toggle.classList.remove('collapsed');
-    }
-}
+// 移除舊的收合/展開功能（現在一次顯示所有選項）
 
 /**
  * 顯示錯誤訊息

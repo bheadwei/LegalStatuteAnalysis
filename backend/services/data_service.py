@@ -173,6 +173,8 @@ class DataService:
         """
         law_info = None
         related_questions = []
+        # 使用字典來收集完整的題目信息（包含所有選項）
+        question_dict = {}
 
         # 遍歷所有報告，找出包含此法條的題目
         for json_file in self.data_dir.glob("*_mapped_embedded.json"):
@@ -182,9 +184,14 @@ class DataService:
                 data = json.load(f)
 
             for question in data.get("question_matches", []):
+                question_key = f"{report_id}_{question.get('question_number')}"
+
+                # 檢查此題是否包含目標法條
+                has_target_law = False
                 for option in question.get("options", []):
                     for article in option.get("matched_articles", []):
                         if article.get("id") == law_id:
+                            has_target_law = True
                             # 保存法條基本資訊（第一次遇到時）
                             if law_info is None:
                                 law_info = {
@@ -196,20 +203,47 @@ class DataService:
                                     "category": article.get("category", ""),
                                     "matched_count": 0
                                 }
+                            break
+                    if has_target_law:
+                        break
 
-                            # 記錄相關題目
-                            related_questions.append({
-                                "report_id": report_id,
-                                "question_number": question.get("question_number"),
-                                "question_text": question.get("question_text", ""),
-                                "option_letter": option.get("option_letter", ""),
-                                "option_text": option.get("option_text", ""),
-                                "similarity": article.get("similarity", 0.0)
-                            })
+                # 如果這題包含目標法條，收集完整題目信息
+                if has_target_law and question_key not in question_dict:
+                    all_options = []
+                    for option in question.get("options", []):
+                        # 檢查此選項是否匹配目標法條
+                        matched_target = any(
+                            article.get("id") == law_id
+                            for article in option.get("matched_articles", [])
+                        )
+                        similarity = 0.0
+                        if matched_target:
+                            for article in option.get("matched_articles", []):
+                                if article.get("id") == law_id:
+                                    similarity = article.get("similarity", 0.0)
+                                    break
+
+                        all_options.append({
+                            "option_letter": option.get("option_letter", ""),
+                            "option_text": option.get("option_text", ""),
+                            "is_correct": option.get("is_correct_answer", False),
+                            "matched_target": matched_target,
+                            "similarity": similarity
+                        })
+
+                    question_dict[question_key] = {
+                        "report_id": report_id,
+                        "question_number": question.get("question_number"),
+                        "question_text": question.get("question_text", ""),
+                        "correct_answer": question.get("correct_answer", ""),
+                        "all_options": all_options
+                    }
 
         if law_info is None:
             return None
 
+        # 將字典轉換為列表
+        related_questions = list(question_dict.values())
         law_info["matched_count"] = len(related_questions)
         law_info["related_questions"] = related_questions
 

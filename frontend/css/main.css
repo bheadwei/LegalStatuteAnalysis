@@ -12,15 +12,15 @@
 }
 
 :root {
-    /* 主色系 - 藍色 */
-    --primary-900: #1e3a8a;
-    --primary-800: #1e40af;
-    --primary-700: #1d4ed8;
-    --primary-600: #2563eb;
-    --primary-500: #3b82f6;
-    --primary-400: #60a5fa;
-    --primary-300: #93c5fd;
-    --primary-200: #bfdbfe;
+    /* 主色系 - 深藍色 */
+    --primary-900: #0c1e47;
+    --primary-800: #0f2557;
+    --primary-700: #1a3a6b;
+    --primary-600: #1e4a8a;
+    --primary-500: #2563eb;
+    --primary-400: #3b82f6;
+    --primary-300: #60a5fa;
+    --primary-200: #93c5fd;
     --primary-100: #dbeafe;
     --primary-50: #eff6ff;
 
@@ -36,10 +36,19 @@
     --neutral-100: #f1f5f9;
     --neutral-50: #f8fafc;
 
-    /* 語義色 */
+    /* 語義色 - 增加色彩豐富度 */
     --success: #10b981;
+    --success-light: #d1fae5;
     --warning: #f59e0b;
+    --warning-light: #fef3c7;
     --error: #ef4444;
+    --error-light: #fee2e2;
+    --info: #0ea5e9;
+    --info-light: #e0f2fe;
+    --accent-purple: #8b5cf6;
+    --accent-purple-light: #ede9fe;
+    --accent-teal: #14b8a6;
+    --accent-teal-light: #ccfbf1;
 
     /* 間距 */
     --spacing-xs: 0.25rem;
@@ -94,11 +103,11 @@ body {
 
 /* ========== 頁面標題 ========== */
 .page-header {
-    background: linear-gradient(135deg, var(--primary-700) 0%, var(--primary-500) 100%);
+    background: linear-gradient(135deg, var(--primary-800) 0%, var(--primary-600) 50%, var(--accent-teal) 100%);
     color: white;
     padding: var(--spacing-2xl) 0;
     margin-bottom: var(--spacing-2xl);
-    box-shadow: var(--shadow-md);
+    box-shadow: 0 4px 12px rgba(15, 37, 87, 0.3);
 }
 
 .page-header h1 {
@@ -166,25 +175,42 @@ body {
 
 .law-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: var(--spacing-lg);
+    grid-template-columns: repeat(5, 1fr);
+    gap: var(--spacing-md);
+}
+
+@media (max-width: 1400px) {
+    .law-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+@media (max-width: 1024px) {
+    .law-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
 }
 
 .law-card {
     background: white;
-    border-radius: var(--radius-lg);
-    padding: var(--spacing-xl);
-    box-shadow: var(--shadow-sm);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md) var(--spacing-lg);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     border: 1px solid var(--neutral-200);
-    border-left: 4px solid var(--primary-500);
-    transition: all 0.2s ease;
+    border-left: 3px solid var(--primary-600);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 }
 
 .law-card:hover {
-    box-shadow: var(--shadow-lg);
-    transform: translateY(-4px);
-    border-left-color: var(--primary-600);
+    box-shadow: 0 8px 20px rgba(30, 74, 138, 0.15);
+    transform: translateY(-3px);
+    border-left-color: var(--primary-700);
+    border-left-width: 4px;
 }
 
 .law-card-header {
@@ -204,9 +230,10 @@ body {
 }
 
 .law-article-number {
-    font-size: 1.125rem;
-    font-weight: 600;
+    font-size: 1rem;
+    font-weight: 700;
     color: var(--primary-700);
+    text-align: center;
 }
 
 .law-card-body {
@@ -215,12 +242,13 @@ body {
 
 .law-category {
     display: inline-block;
-    padding: var(--spacing-xs) var(--spacing-md);
+    padding: 0.25rem 0.625rem;
     background: var(--primary-50);
     color: var(--primary-700);
-    border-radius: var(--radius-md);
-    font-size: 0.875rem;
-    font-weight: 500;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-align: center;
 }
 
 .law-card-footer {
@@ -241,81 +269,144 @@ body {
 }
 
 .match-count-badge {
-    background: var(--primary-500);
+    background: linear-gradient(135deg, var(--primary-600) 0%, var(--primary-500) 100%);
     color: white;
-    padding: var(--spacing-xs) var(--spacing-sm);
+    padding: 0.125rem 0.5rem;
     border-radius: var(--radius-sm);
-    font-weight: 600;
-    font-size: 1rem;
+    font-weight: 700;
+    font-size: 0.875rem;
+    box-shadow: 0 2px 4px rgba(30, 74, 138, 0.2);
 }
 
-/* ========== 題目卡片（可收合）========== */
-.question-card {
+/* ========== 題目卡片（完整顯示版）========== */
+.question-card-full {
     background: white;
     border-radius: var(--radius-lg);
-    margin-bottom: var(--spacing-lg);
-    box-shadow: var(--shadow-sm);
+    margin-bottom: var(--spacing-xl);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
     border: 1px solid var(--neutral-200);
     overflow: hidden;
 }
 
-.question-header {
-    background: var(--primary-600);
+.question-header-full {
+    background: linear-gradient(135deg, var(--primary-700) 0%, var(--primary-600) 100%);
     color: white;
     padding: var(--spacing-lg) var(--spacing-xl);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    cursor: pointer;
-    user-select: none;
-    transition: background 0.2s ease;
 }
 
-.question-header:hover {
-    background: var(--primary-700);
-}
-
-.question-number {
-    font-size: 1.25rem;
+.question-number-badge {
+    font-size: 1.125rem;
     font-weight: 700;
 }
 
-.question-toggle {
-    font-size: 1.5rem;
-    transition: transform 0.3s ease;
+.correct-answer-info {
+    font-size: 0.9375rem;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 0.375rem 0.875rem;
+    border-radius: var(--radius-md);
+    font-weight: 600;
 }
 
-.question-toggle.collapsed {
-    transform: rotate(-90deg);
-}
-
-.question-body {
+.question-body-full {
     padding: var(--spacing-xl);
-    display: none;
-}
-
-.question-body.expanded {
-    display: block;
-    animation: slideDown 0.3s ease;
-}
-
-@keyframes slideDown {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
 }
 
 .question-text {
-    font-size: 1.125rem;
+    font-size: 1.0625rem;
     font-weight: 500;
     color: var(--neutral-900);
-    margin-bottom: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
     line-height: 1.8;
+    padding: var(--spacing-lg);
+    background: var(--neutral-50);
+    border-radius: var(--radius-md);
+    border-left: 4px solid var(--primary-500);
+}
+
+.options-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.option-item {
+    background: var(--neutral-50);
+    border: 2px solid var(--neutral-200);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-lg);
+    transition: all 0.2s ease;
+}
+
+.option-item:hover {
+    border-color: var(--primary-300);
+    background: white;
+}
+
+.option-item.correct-option {
+    background: var(--success-light);
+    border-color: var(--success);
+    border-width: 2px;
+}
+
+.option-letter-circle {
+    flex-shrink: 0;
+    width: 2.5rem;
+    height: 2.5rem;
+    background: var(--neutral-400);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.125rem;
+}
+
+.option-letter-circle.correct {
+    background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.option-text {
+    font-size: 1rem;
+    color: var(--neutral-800);
+    line-height: 1.7;
+}
+
+.option-badges {
+    display: flex;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-sm);
+    flex-wrap: wrap;
+}
+
+.correct-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.75rem;
+    background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+    color: white;
+    border-radius: var(--radius-sm);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+}
+
+.matched-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.75rem;
+    background: linear-gradient(135deg, var(--accent-purple) 0%, #7c3aed 100%);
+    color: white;
+    border-radius: var(--radius-sm);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    box-shadow: 0 2px 4px rgba(139, 92, 246, 0.2);
 }
 
 /* ========== 選項 ========== */
