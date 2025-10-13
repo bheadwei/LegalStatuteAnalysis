@@ -69,28 +69,52 @@ function renderLawInfo() {
 }
 
 /**
- * 格式化法條內容（條列式呈現）
+ * 格式化法條內容（條列式呈現，自動識別項目符號）
  */
 function formatLawContent(content) {
-    // 將 # 符號分割，製作成編號列表
-    const lines = content
-        .split('#')
+    if (!content) return '';
+
+    // 先處理 # 符號分割
+    let processedContent = content.replace(/#/g, '\n');
+
+    // 識別並在條列項目前換行
+    // 匹配：一、二、三、... 或 （一）（二）... 或 1. 2. 3. ...
+    processedContent = processedContent
+        // 在中文數字編號前換行（一、二、三、四、五...）
+        .replace(/([^。\n])(一、|二、|三、|四、|五、|六、|七、|八、|九、|十、|十一、|十二、|十三、|十四、|十五、)/g, '$1\n$2')
+        // 在括號數字前換行（（一）（二）...）
+        .replace(/([^。\n])(（一）|（二）|（三）|（四）|（五）|（六）|（七）|（八）|（九）|（十）)/g, '$1\n$2')
+        // 在阿拉伯數字編號前換行（1. 2. 3. ...）
+        .replace(/([^。\n])(\d+\.\s)/g, '$1\n$2')
+        // 清理多餘空行
+        .replace(/\n\s*\n/g, '\n')
+        .trim();
+
+    // 分割成行
+    const lines = processedContent
+        .split('\n')
         .map(line => line.trim())
         .filter(line => line.length > 0);
 
     if (lines.length === 0) return '';
 
-    // 如果只有一行，直接返回
-    if (lines.length === 1) {
-        return `<p style="line-height: 1.8; color: var(--neutral-800);">${lines[0]}</p>`;
-    }
+    // 渲染每一行
+    const linesHtml = lines
+        .map(line => {
+            // 檢查是否為條列項目
+            const isListItem = /^(一、|二、|三、|四、|五、|六、|七、|八、|九、|十、|（一）|（二）|（三）|（四）|（五）|\d+\.\s)/.test(line);
 
-    // 多行時使用編號列表
-    const listItems = lines
-        .map((line, index) => `<li style="margin-bottom: 0.75rem; line-height: 1.8;">${line}</li>`)
+            if (isListItem) {
+                // 條列項目：縮排 + 加粗編號
+                return `<p style="margin-bottom: 0.5rem; line-height: 1.8; padding-left: 1rem; text-indent: -1rem;">${line}</p>`;
+            } else {
+                // 一般段落
+                return `<p style="margin-bottom: 0.5rem; line-height: 1.8;">${line}</p>`;
+            }
+        })
         .join('');
 
-    return `<ol style="padding-left: 1.5rem; color: var(--neutral-800);">${listItems}</ol>`;
+    return linesHtml;
 }
 
 /**
